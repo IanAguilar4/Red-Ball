@@ -28,11 +28,20 @@ struct Platform {
     }
 };
 
-// Estructura para representar un nivel completo
+// Estructura para representar un pico/obstáculo sobre plataformas
+struct Spike {
+    sf::ConvexShape shape;
+    bool moving;
+    float minX, maxX;
+    float speed;    // px/seg
+    int direction;  // 1 derecha, -1 izquierda
+};
+
 struct Level {
     Platform ground;                         // suelo principal
     std::vector<Platform> platforms;         // plataformas elevadas
-    std::vector<sf::RectangleShape> obstacles; // obstáculos mortales
+    std::vector<sf::RectangleShape> obstacles; // obstáculos "bloque" (negros)
+    std::vector<Spike> spikes;              // picos estáticos o móviles
     sf::CircleShape goal;                    // objetivo (estrella)
     sf::Vector2f spawn;                      // posición inicial del jugador
 
@@ -71,26 +80,53 @@ void saveScores(const std::string& filename, const std::vector<PlayerScore>& sco
     }
 }
 
+// Centrar un texto horizontalmente en la ventana
+void centerTextX(sf::Text& text, float windowWidth) {
+    sf::FloatRect b = text.getLocalBounds();
+    text.setPosition((windowWidth - b.width) / 2.f - b.left, text.getPosition().y);
+}
+
+// Helper para crear picos
+Spike createSpike(float x, float y, float width, float height,
+                  bool moving = false, float minX = 0.f,
+                  float maxX = 0.f, float speed = 0.f) {
+    Spike s;
+    s.shape.setPointCount(3);
+    // Triángulo isósceles apuntando hacia arriba
+    s.shape.setPoint(0, sf::Vector2f(0.f, height));
+    s.shape.setPoint(1, sf::Vector2f(width / 2.f, 0.f));
+    s.shape.setPoint(2, sf::Vector2f(width, height));
+    s.shape.setPosition(x, y);
+    s.shape.setFillColor(sf::Color::Black);
+    s.moving = moving;
+    s.minX = minX;
+    s.maxX = maxX;
+    s.speed = speed;
+    s.direction = 1;
+    return s;
+}
+
 // --- Definición de niveles ---
 
-// Nivel 1: muy básico, pocas trampas
+// Nivel 1: muy básico
 Level createLevel1() {
     Level level(0.f, 560.f, 800.f, 40.f);
     level.ground.shape.setFillColor(sf::Color(34, 139, 34));
     level.ground.bounds = level.ground.shape.getGlobalBounds();
 
-    // Plataformas sencillas en escalera
     level.platforms.emplace_back(80.f, 450.f, 160.f, 20.f);
     level.platforms.emplace_back(280.f, 370.f, 160.f, 20.f);
     level.platforms.emplace_back(480.f, 300.f, 160.f, 20.f);
 
-    // Un solo obstáculo en el suelo, lejos del spawn
+    // Obstáculo en suelo
     sf::RectangleShape obs1(sf::Vector2f(60.f, 60.f));
     obs1.setPosition(450.f, 500.f);
     obs1.setFillColor(sf::Color::Black);
     level.obstacles.push_back(obs1);
 
-    // Meta relativamente baja
+    // Pico estático sobre la segunda plataforma
+    level.spikes.push_back(createSpike(320.f, 370.f - 18.f, 40.f, 18.f));
+
     level.goal = sf::CircleShape(20.f, 5);
     level.goal.setOrigin(20.f, 20.f);
     level.goal.setPosition(700.f, 260.f);
@@ -98,19 +134,17 @@ Level createLevel1() {
     level.goal.setOutlineColor(sf::Color(255, 215, 0));
     level.goal.setOutlineThickness(3.f);
 
-    // Spawn cómodo
     level.spawn = sf::Vector2f(80.f, 520.f);
 
     return level;
 }
 
-// Nivel 2: más vertical y un par de trampas
+// Nivel 2: más vertical y un pico móvil suave
 Level createLevel2() {
     Level level(0.f, 560.f, 800.f, 40.f);
     level.ground.shape.setFillColor(sf::Color(34, 139, 34));
     level.ground.bounds = level.ground.shape.getGlobalBounds();
 
-    // Plataformas tipo escalera
     level.platforms.emplace_back(80.f, 480.f, 140.f, 20.f);
     level.platforms.emplace_back(260.f, 420.f, 140.f, 20.f);
     level.platforms.emplace_back(440.f, 360.f, 140.f, 20.f);
@@ -122,11 +156,14 @@ Level createLevel2() {
     obs1.setFillColor(sf::Color::Black);
     level.obstacles.push_back(obs1);
 
-    // Obstáculo sobre una plataforma (hay que saltar bajo él)
-    sf::RectangleShape obs2(sf::Vector2f(50.f, 40.f));
-    obs2.setPosition(310.f, 420.f - 40.f); // flotando sobre la segunda plataforma
-    obs2.setFillColor(sf::Color::Black);
-    level.obstacles.push_back(obs2);
+    // Pico estático sobre la primera plataforma
+    level.spikes.push_back(createSpike(110.f, 480.f - 18.f, 40.f, 18.f));
+
+    // Pico móvil sobre la tercera plataforma (se mueve de izquierda a derecha)
+    level.spikes.push_back(
+        createSpike(460.f, 360.f - 18.f, 40.f, 18.f,
+                    true, 450.f, 520.f, 70.f) // minX, maxX, speed
+    );
 
     level.goal = sf::CircleShape(20.f, 5);
     level.goal.setOrigin(20.f, 20.f);
@@ -140,7 +177,7 @@ Level createLevel2() {
     return level;
 }
 
-// Nivel 3: torre sencilla con trampas laterales
+// Nivel 3: torre sencilla con picos
 Level createLevel3() {
     Level level(0.f, 560.f, 800.f, 40.f);
     level.ground.shape.setFillColor(sf::Color(34, 139, 34));
@@ -152,17 +189,20 @@ Level createLevel3() {
     level.platforms.emplace_back(580.f, 290.f, 120.f, 20.f);
     level.platforms.emplace_back(580.f, 210.f, 120.f, 20.f);
 
-    // Obstáculo en suelo
+    // Bloque en suelo
     sf::RectangleShape obs1(sf::Vector2f(60.f, 60.f));
     obs1.setPosition(350.f, 500.f);
     obs1.setFillColor(sf::Color::Black);
     level.obstacles.push_back(obs1);
 
-    // Obstáculo flotante entre plataformas
-    sf::RectangleShape obs2(sf::Vector2f(50.f, 40.f));
-    obs2.setPosition(460.f, 360.f - 40.f);
-    obs2.setFillColor(sf::Color::Black);
-    level.obstacles.push_back(obs2);
+    // Pico estático sobre la segunda plataforma
+    level.spikes.push_back(createSpike(290.f, 430.f - 18.f, 40.f, 18.f));
+
+    // Pico móvil sobre la cuarta plataforma
+    level.spikes.push_back(
+        createSpike(600.f, 290.f - 20.f, 40.f, 20.f,
+                    true, 580.f, 680.f, 80.f)
+    );
 
     level.goal = sf::CircleShape(20.f, 5);
     level.goal.setOrigin(20.f, 20.f);
@@ -176,20 +216,19 @@ Level createLevel3() {
     return level;
 }
 
-// Nivel 4: más plataformas y trampas sobre el camino
+// Nivel 4: escalera larga
 Level createLevel4() {
     Level level(0.f, 560.f, 800.f, 40.f);
     level.ground.shape.setFillColor(sf::Color(34, 139, 34));
     level.ground.bounds = level.ground.shape.getGlobalBounds();
 
-    // Secuencia larga de plataformas
     level.platforms.emplace_back(60.f, 500.f, 120.f, 20.f);
     level.platforms.emplace_back(220.f, 440.f, 120.f, 20.f);
     level.platforms.emplace_back(380.f, 380.f, 120.f, 20.f);
     level.platforms.emplace_back(540.f, 320.f, 120.f, 20.f);
     level.platforms.emplace_back(660.f, 260.f, 100.f, 20.f);
 
-    // Obstáculos en el suelo
+    // Bloques en suelo
     sf::RectangleShape obs1(sf::Vector2f(50.f, 70.f));
     obs1.setPosition(180.f, 490.f);
     obs1.setFillColor(sf::Color::Black);
@@ -200,11 +239,12 @@ Level createLevel4() {
     obs2.setFillColor(sf::Color::Black);
     level.obstacles.push_back(obs2);
 
-    // Obstáculo colgando sobre una plataforma (para obligar a saltar preciso)
-    sf::RectangleShape obs3(sf::Vector2f(50.f, 40.f));
-    obs3.setPosition(410.f, 380.f - 40.f);
-    obs3.setFillColor(sf::Color::Black);
-    level.obstacles.push_back(obs3);
+    // Picos sobre tercera y cuarta plataformas
+    level.spikes.push_back(createSpike(410.f, 380.f - 18.f, 40.f, 18.f));
+    level.spikes.push_back(
+        createSpike(560.f, 320.f - 18.f, 40.f, 18.f,
+                    true, 540.f, 650.f, 90.f)
+    );
 
     level.goal = sf::CircleShape(20.f, 5);
     level.goal.setOrigin(20.f, 20.f);
@@ -218,37 +258,31 @@ Level createLevel4() {
     return level;
 }
 
-// Nivel 5: tipo "puente" con huecos y trampas arriba
+// Nivel 5: puentes con huecos
 Level createLevel5() {
     Level level(0.f, 560.f, 800.f, 40.f);
     level.ground.shape.setFillColor(sf::Color(34, 139, 34));
     level.ground.bounds = level.ground.shape.getGlobalBounds();
 
-    // Plataformas largas con huecos
     level.platforms.emplace_back(50.f, 450.f, 200.f, 20.f);
     level.platforms.emplace_back(320.f, 450.f, 160.f, 20.f);
     level.platforms.emplace_back(560.f, 450.f, 180.f, 20.f);
 
-    // Plataformas superiores
     level.platforms.emplace_back(200.f, 350.f, 120.f, 20.f);
     level.platforms.emplace_back(440.f, 320.f, 120.f, 20.f);
 
-    // Obstáculos bajo el nivel superior (te pegan si saltas mal)
-    sf::RectangleShape obs1(sf::Vector2f(40.f, 40.f));
-    obs1.setPosition(250.f, 350.f - 40.f);
-    obs1.setFillColor(sf::Color::Black);
-    level.obstacles.push_back(obs1);
-
-    sf::RectangleShape obs2(sf::Vector2f(40.f, 40.f));
-    obs2.setPosition(480.f, 320.f - 40.f);
-    obs2.setFillColor(sf::Color::Black);
-    level.obstacles.push_back(obs2);
-
-    // Obstáculo en el hueco central
+    // Bloque en hueco central
     sf::RectangleShape obs3(sf::Vector2f(60.f, 80.f));
     obs3.setPosition(300.f, 480.f);
     obs3.setFillColor(sf::Color::Black);
     level.obstacles.push_back(obs3);
+
+    // Picos sobre plataformas superiores
+    level.spikes.push_back(createSpike(230.f, 350.f - 18.f, 40.f, 18.f));
+    level.spikes.push_back(
+        createSpike(460.f, 320.f - 18.f, 40.f, 18.f,
+                    true, 440.f, 520.f, 100.f)
+    );
 
     level.goal = sf::CircleShape(20.f, 5);
     level.goal.setOrigin(20.f, 20.f);
@@ -262,20 +296,18 @@ Level createLevel5() {
     return level;
 }
 
-// Nivel 6: más vertical, saltos más finos
+// Nivel 6: plataformas pequeñas
 Level createLevel6() {
     Level level(0.f, 560.f, 800.f, 40.f);
     level.ground.shape.setFillColor(sf::Color(34, 139, 34));
     level.ground.bounds = level.ground.shape.getGlobalBounds();
 
-    // Plataformas pequeñas (más precisión)
     level.platforms.emplace_back(80.f, 500.f, 90.f, 20.f);
     level.platforms.emplace_back(220.f, 430.f, 90.f, 20.f);
     level.platforms.emplace_back(360.f, 360.f, 90.f, 20.f);
     level.platforms.emplace_back(500.f, 290.f, 90.f, 20.f);
     level.platforms.emplace_back(640.f, 230.f, 90.f, 20.f);
 
-    // Obstáculos en el suelo
     sf::RectangleShape obs1(sf::Vector2f(50.f, 60.f));
     obs1.setPosition(180.f, 500.f);
     obs1.setFillColor(sf::Color::Black);
@@ -286,11 +318,14 @@ Level createLevel6() {
     obs2.setFillColor(sf::Color::Black);
     level.obstacles.push_back(obs2);
 
-    // Obstáculo flotante sobre el tercer escalón
-    sf::RectangleShape obs3(sf::Vector2f(40.f, 40.f));
-    obs3.setPosition(380.f, 360.f - 40.f);
-    obs3.setFillColor(sf::Color::Black);
-    level.obstacles.push_back(obs3);
+    // Pico móvil sobre la cuarta plataforma
+    level.spikes.push_back(
+        createSpike(510.f, 290.f - 18.f, 40.f, 18.f,
+                    true, 500.f, 620.f, 110.f)
+    );
+
+    // Pico estático sobre la tercera
+    level.spikes.push_back(createSpike(380.f, 360.f - 18.f, 40.f, 18.f));
 
     level.goal = sf::CircleShape(20.f, 5);
     level.goal.setOrigin(20.f, 20.f);
@@ -304,38 +339,32 @@ Level createLevel6() {
     return level;
 }
 
-// Nivel 7: combinación de plataformas bajas y altas con trampas centrales
+// Nivel 7: mezcla bajas/altas
 Level createLevel7() {
     Level level(0.f, 560.f, 800.f, 40.f);
     level.ground.shape.setFillColor(sf::Color(34, 139, 34));
     level.ground.bounds = level.ground.shape.getGlobalBounds();
 
-    // Plataformas bajas
     level.platforms.emplace_back(60.f, 500.f, 140.f, 20.f);
     level.platforms.emplace_back(260.f, 500.f, 140.f, 20.f);
     level.platforms.emplace_back(460.f, 500.f, 140.f, 20.f);
 
-    // Plataformas altas
     level.platforms.emplace_back(200.f, 380.f, 120.f, 20.f);
     level.platforms.emplace_back(400.f, 340.f, 120.f, 20.f);
     level.platforms.emplace_back(610.f, 300.f, 120.f, 20.f);
 
-    // Obstáculos en el centro del mapa
     sf::RectangleShape obs1(sf::Vector2f(60.f, 80.f));
     obs1.setPosition(340.f, 480.f);
     obs1.setFillColor(sf::Color::Black);
     level.obstacles.push_back(obs1);
 
-    // Obstáculos flotantes sobre plataformas altas
-    sf::RectangleShape obs2(sf::Vector2f(50.f, 40.f));
-    obs2.setPosition(230.f, 380.f - 40.f);
-    obs2.setFillColor(sf::Color::Black);
-    level.obstacles.push_back(obs2);
-
-    sf::RectangleShape obs3(sf::Vector2f(50.f, 40.f));
-    obs3.setPosition(430.f, 340.f - 40.f);
-    obs3.setFillColor(sf::Color::Black);
-    level.obstacles.push_back(obs3);
+    // Picos sobre plataformas altas
+    level.spikes.push_back(createSpike(230.f, 380.f - 18.f, 40.f, 18.f));
+    level.spikes.push_back(
+        createSpike(430.f, 340.f - 18.f, 40.f, 18.f,
+                    true, 400.f, 500.f, 120.f)
+    );
+    level.spikes.push_back(createSpike(640.f, 300.f - 18.f, 40.f, 18.f));
 
     level.goal = sf::CircleShape(20.f, 5);
     level.goal.setOrigin(20.f, 20.f);
@@ -349,74 +378,59 @@ Level createLevel7() {
     return level;
 }
 
-// Nivel 8: camino relativamente largo con techos peligrosos
+// Nivel 8: camino largo con techos peligrosos (el de tu captura)
 Level createLevel8() {
     Level level(0.f, 560.f, 800.f, 40.f);
     level.ground.shape.setFillColor(sf::Color(34, 139, 34));
     level.ground.bounds = level.ground.shape.getGlobalBounds();
 
-    // Plataformas tipo "túnel"
-    level.platforms.emplace_back(50.f, 480.f, 180.f, 20.f);
-    level.platforms.emplace_back(260.f, 420.f, 180.f, 20.f);
-    level.platforms.emplace_back(470.f, 360.f, 180.f, 20.f);
-    level.platforms.emplace_back(300.f, 300.f, 120.f, 20.f);
-    level.platforms.emplace_back(550.f, 260.f, 150.f, 20.f);
+    level.platforms.emplace_back(150.f, 500.f, 160.f, 20.f);
+    level.platforms.emplace_back(320.f, 430.f, 160.f, 20.f);
+    level.platforms.emplace_back(490.f, 360.f, 160.f, 20.f);
+    level.platforms.emplace_back(660.f, 290.f, 120.f, 20.f);
 
-    // Techos peligrosos sobre el camino
-    sf::RectangleShape obs1(sf::Vector2f(80.f, 30.f));
-    obs1.setPosition(100.f, 480.f - 60.f);
-    obs1.setFillColor(sf::Color::Black);
-    level.obstacles.push_back(obs1);
+    // Bloque en extremo derecho (como en tu screenshot)
+    sf::RectangleShape obsFloor(sf::Vector2f(60.f, 80.f));
+    obsFloor.setPosition(700.f, 480.f);
+    obsFloor.setFillColor(sf::Color::Black);
+    level.obstacles.push_back(obsFloor);
 
-    sf::RectangleShape obs2(sf::Vector2f(80.f, 30.f));
-    obs2.setPosition(310.f, 420.f - 60.f);
-    obs2.setFillColor(sf::Color::Black);
-    level.obstacles.push_back(obs2);
-
-    sf::RectangleShape obs3(sf::Vector2f(80.f, 30.f));
-    obs3.setPosition(520.f, 360.f - 60.f);
-    obs3.setFillColor(sf::Color::Black);
-    level.obstacles.push_back(obs3);
-
-    // Un obstáculo en el suelo cerca del final
-    sf::RectangleShape obs4(sf::Vector2f(60.f, 80.f));
-    obs4.setPosition(620.f, 480.f);
-    obs4.setFillColor(sf::Color::Black);
-    level.obstacles.push_back(obs4);
+    // Picos sobre segunda y tercera plataformas
+    level.spikes.push_back(createSpike(360.f, 430.f - 18.f, 40.f, 18.f));
+    level.spikes.push_back(
+        createSpike(520.f, 360.f - 18.f, 40.f, 18.f,
+                    true, 510.f, 610.f, 130.f)
+    );
 
     level.goal = sf::CircleShape(20.f, 5);
     level.goal.setOrigin(20.f, 20.f);
-    level.goal.setPosition(720.f, 220.f);
+    level.goal.setPosition(740.f, 250.f);
     level.goal.setFillColor(sf::Color::Yellow);
     level.goal.setOutlineColor(sf::Color(255, 215, 0));
     level.goal.setOutlineThickness(3.f);
 
-    level.spawn = sf::Vector2f(70.f, 520.f);
+    level.spawn = sf::Vector2f(170.f, 520.f);
 
     return level;
 }
 
-// Nivel 9: mezcla de rutas posibles y trampas por todos lados
+// Nivel 9: muchas rutas
 Level createLevel9() {
     Level level(0.f, 560.f, 800.f, 40.f);
     level.ground.shape.setFillColor(sf::Color(34, 139, 34));
     level.ground.bounds = level.ground.shape.getGlobalBounds();
 
-    // Plataformas inferiores
     level.platforms.emplace_back(80.f, 500.f, 120.f, 20.f);
     level.platforms.emplace_back(260.f, 500.f, 120.f, 20.f);
     level.platforms.emplace_back(440.f, 500.f, 120.f, 20.f);
 
-    // Plataformas intermedias
     level.platforms.emplace_back(150.f, 420.f, 100.f, 20.f);
     level.platforms.emplace_back(350.f, 380.f, 100.f, 20.f);
     level.platforms.emplace_back(550.f, 340.f, 100.f, 20.f);
 
-    // Plataformas superiores
     level.platforms.emplace_back(250.f, 300.f, 120.f, 20.f);
     level.platforms.emplace_back(460.f, 260.f, 120.f, 20.f);
 
-    // Obstáculos en zonas clave
     sf::RectangleShape obs1(sf::Vector2f(50.f, 70.f));
     obs1.setPosition(210.f, 490.f);
     obs1.setFillColor(sf::Color::Black);
@@ -427,15 +441,13 @@ Level createLevel9() {
     obs2.setFillColor(sf::Color::Black);
     level.obstacles.push_back(obs2);
 
-    sf::RectangleShape obs3(sf::Vector2f(50.f, 40.f));
-    obs3.setPosition(370.f, 380.f - 40.f);
-    obs3.setFillColor(sf::Color::Black);
-    level.obstacles.push_back(obs3);
-
-    sf::RectangleShape obs4(sf::Vector2f(50.f, 40.f));
-    obs4.setPosition(480.f, 260.f - 40.f);
-    obs4.setFillColor(sf::Color::Black);
-    level.obstacles.push_back(obs4);
+    // Picos varios
+    level.spikes.push_back(createSpike(180.f, 420.f - 18.f, 40.f, 18.f));
+    level.spikes.push_back(
+        createSpike(370.f, 380.f - 18.f, 40.f, 18.f,
+                    true, 350.f, 430.f, 130.f)
+    );
+    level.spikes.push_back(createSpike(480.f, 260.f - 18.f, 40.f, 18.f));
 
     level.goal = sf::CircleShape(20.f, 5);
     level.goal.setOrigin(20.f, 20.f);
@@ -449,13 +461,12 @@ Level createLevel9() {
     return level;
 }
 
-// Nivel 10: final, bastante vertical y con trampas arriba y abajo
+// Nivel 10: final vertical
 Level createLevel10() {
     Level level(0.f, 560.f, 800.f, 40.f);
     level.ground.shape.setFillColor(sf::Color(34, 139, 34));
     level.ground.bounds = level.ground.shape.getGlobalBounds();
 
-    // Torre final
     level.platforms.emplace_back(80.f, 500.f, 90.f, 20.f);
     level.platforms.emplace_back(200.f, 440.f, 90.f, 20.f);
     level.platforms.emplace_back(320.f, 380.f, 90.f, 20.f);
@@ -463,7 +474,6 @@ Level createLevel10() {
     level.platforms.emplace_back(560.f, 260.f, 90.f, 20.f);
     level.platforms.emplace_back(680.f, 200.f, 90.f, 20.f);
 
-    // Obstáculos en suelo
     sf::RectangleShape obs1(sf::Vector2f(50.f, 70.f));
     obs1.setPosition(160.f, 490.f);
     obs1.setFillColor(sf::Color::Black);
@@ -479,16 +489,17 @@ Level createLevel10() {
     obs3.setFillColor(sf::Color::Black);
     level.obstacles.push_back(obs3);
 
-    // Obstáculos flotantes cerca del final
-    sf::RectangleShape obs4(sf::Vector2f(50.f, 40.f));
-    obs4.setPosition(470.f, 320.f - 40.f);
-    obs4.setFillColor(sf::Color::Black);
-    level.obstacles.push_back(obs4);
-
-    sf::RectangleShape obs5(sf::Vector2f(50.f, 40.f));
-    obs5.setPosition(590.f, 260.f - 40.f);
-    obs5.setFillColor(sf::Color::Black);
-    level.obstacles.push_back(obs5);
+    // Picos complicados al final
+    level.spikes.push_back(createSpike(220.f, 440.f - 18.f, 40.f, 18.f));
+    level.spikes.push_back(createSpike(340.f, 380.f - 18.f, 40.f, 18.f));
+    level.spikes.push_back(
+        createSpike(460.f, 320.f - 18.f, 40.f, 18.f,
+                    true, 440.f, 520.f, 150.f)
+    );
+    level.spikes.push_back(
+        createSpike(580.f, 260.f - 18.f, 40.f, 18.f,
+                    true, 560.f, 680.f, 170.f)
+    );
 
     level.goal = sf::CircleShape(20.f, 5);
     level.goal.setOrigin(20.f, 20.f);
@@ -521,7 +532,7 @@ int main()
     std::string playerName;        // nombre actual
     std::string nameInputBuffer;   // lo que el usuario va escribiendo
 
-    // Definir niveles (10 niveles en total)
+    // Definir niveles
     std::vector<Level> levels;
     levels.push_back(createLevel1());
     levels.push_back(createLevel2());
@@ -543,7 +554,7 @@ int main()
     ball.setOutlineColor(sf::Color(139, 0, 0));
     ball.setOutlineThickness(2.f);
 
-    // Física (la tuya; no la toco)
+    // Física (igual que tenías)
     sf::Vector2f velocity(0.f, 0.f);
     const float gravity = 0.5f;
     const float acceleration = 1.2f;
@@ -580,7 +591,6 @@ int main()
             if (event.type == sf::Event::Closed)
                 window.close();
 
-            // Título -> ingresar nombre
             if (state == GameState::Title) {
                 if (event.type == sf::Event::KeyPressed &&
                     (event.key.code == sf::Keyboard::Enter ||
@@ -589,11 +599,9 @@ int main()
                     state = GameState::EnterName;
                 }
             }
-            // Pantalla de nombre
             else if (state == GameState::EnterName) {
                 if (event.type == sf::Event::TextEntered) {
                     char c = static_cast<char>(event.text.unicode);
-                    // Aceptar caracteres imprimibles sin espacios (para no complicar el archivo)
                     if (event.text.unicode == 8) { // Backspace
                         if (!nameInputBuffer.empty())
                             nameInputBuffer.pop_back();
@@ -615,7 +623,6 @@ int main()
                     }
                 }
             }
-            // Nivel completado (esperando Enter para siguiente)
             else if (state == GameState::LevelComplete) {
                 if (event.type == sf::Event::KeyPressed &&
                     (event.key.code == sf::Keyboard::Enter ||
@@ -624,7 +631,6 @@ int main()
                         resetLevel(currentLevelIndex + 1);
                         state = GameState::Playing;
                     } else {
-                        // Partida terminada: registrar score
                         PlayerScore ps;
                         ps.name = playerName.empty() ? std::string("Anon") : playerName;
                         ps.time = totalRunTime;
@@ -643,7 +649,6 @@ int main()
                     }
                 }
             }
-            // Pantalla final (ranking)
             else if (state == GameState::Finished) {
                 if (event.type == sf::Event::KeyPressed &&
                     event.key.code == sf::Keyboard::R) {
@@ -662,7 +667,23 @@ int main()
 
             Level &lvl = levels[currentLevelIndex];
 
-            // Control horizontal simple (como lo dejaste)
+            // Actualizar spikes móviles
+            for (auto &spike : lvl.spikes) {
+                if (spike.moving) {
+                    float dx = spike.speed * dt * spike.direction;
+                    spike.shape.move(dx, 0.f);
+                    float x = spike.shape.getPosition().x;
+                    if (x < spike.minX) {
+                        spike.shape.setPosition(spike.minX, spike.shape.getPosition().y);
+                        spike.direction = 1;
+                    } else if (x > spike.maxX) {
+                        spike.shape.setPosition(spike.maxX, spike.shape.getPosition().y);
+                        spike.direction = -1;
+                    }
+                }
+            }
+
+            // Control horizontal
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
                 velocity.x -= acceleration * dt * 60.0f;
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
@@ -674,7 +695,7 @@ int main()
                 onGround = false;
             }
 
-            // Resetear posición con D (sin reiniciar timer)
+            // Reset posición
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
                 ball.setPosition(lvl.spawn);
                 velocity = sf::Vector2f(0.f, 0.f);
@@ -694,10 +715,9 @@ int main()
             // Actualizar posición
             ball.move(velocity * dt * 60.0f);
 
-            // Reset onGround
             onGround = false;
 
-            // Colisión con el suelo
+            // Colisión con suelo
             sf::FloatRect ballBounds = ball.getGlobalBounds();
             if (ballBounds.intersects(lvl.ground.bounds))
             {
@@ -717,10 +737,7 @@ int main()
                 if (ballBounds.intersects(pBounds))
                 {
                     sf::Vector2f ballPos = ball.getPosition();
-                    sf::Vector2f platformPos = platform.shape.getPosition();
-                    sf::Vector2f platformSize = platform.shape.getSize();
 
-                    // Calcular la penetración en cada dirección
                     float overlapLeft   = (ballPos.x + 25.f) - pBounds.left;
                     float overlapRight  = (pBounds.left + pBounds.width) - (ballPos.x - 25.f);
                     float overlapTop    = (ballPos.y + 25.f) - pBounds.top;
@@ -754,7 +771,7 @@ int main()
                 }
             }
 
-            // Bordes de la ventana
+            // Bordes de ventana
             sf::Vector2f ballPos = ball.getPosition();
             if (ballPos.x < 25.f)
             {
@@ -767,7 +784,8 @@ int main()
                 velocity.x = 0;
             }
 
-            // Colisión con obstáculos mortales (cuadrados negros)
+            // Colisión con obstáculos (bloques)
+            ballBounds = ball.getGlobalBounds();
             for (const auto& obstacle : lvl.obstacles)
             {
                 sf::FloatRect obsBounds = obstacle.getGlobalBounds();
@@ -780,13 +798,27 @@ int main()
                 }
             }
 
-            // Caer fuera de pantalla: reinicia nivel pero mantiene totalRunTime
+            // Colisión con picos
+            ballBounds = ball.getGlobalBounds();
+            for (const auto& spike : lvl.spikes)
+            {
+                sf::FloatRect sBounds = spike.shape.getGlobalBounds();
+                if (ballBounds.intersects(sBounds))
+                {
+                    ball.setPosition(lvl.spawn);
+                    velocity = sf::Vector2f(0.f, 0.f);
+                    onGround = false;
+                    break;
+                }
+            }
+
+            // Caer fuera de pantalla
             if (ballPos.y > 650.f)
             {
                 resetLevel(currentLevelIndex);
             }
 
-            // Verificar meta
+            // Meta
             sf::Vector2f goalPos = lvl.goal.getPosition();
             ballPos = ball.getPosition();
             float distance = std::sqrt(std::pow(ballPos.x - goalPos.x, 2) +
@@ -809,15 +841,18 @@ int main()
                 sf::Text title("RED BALL", font, 72);
                 title.setFillColor(sf::Color::Red);
                 title.setStyle(sf::Text::Bold);
-                title.setPosition(220.f, 120.f);
+                title.setPosition(0.f, 120.f);
+                centerTextX(title, 800.f);
 
                 sf::Text press("Presiona ENTER para jugar", font, 28);
                 press.setFillColor(sf::Color::White);
-                press.setPosition(170.f, 260.f);
+                press.setPosition(0.f, 260.f);
+                centerTextX(press, 800.f);
 
                 sf::Text hint("Se registrara tu tiempo total para el ranking", font, 20);
                 hint.setFillColor(sf::Color::White);
-                hint.setPosition(130.f, 320.f);
+                hint.setPosition(0.f, 320.f);
+                centerTextX(hint, 800.f);
 
                 window.draw(title);
                 window.draw(press);
@@ -828,15 +863,18 @@ int main()
             if (font.getInfo().family != "") {
                 sf::Text prompt("Escribe tu nombre (sin espacios) y presiona ENTER", font, 24);
                 prompt.setFillColor(sf::Color::White);
-                prompt.setPosition(40.f, 200.f);
+                prompt.setPosition(0.f, 200.f);
+                centerTextX(prompt, 800.f);
 
                 sf::Text nameText(nameInputBuffer.empty() ? "_" : nameInputBuffer, font, 32);
                 nameText.setFillColor(sf::Color::Yellow);
-                nameText.setPosition(200.f, 260.f);
+                nameText.setPosition(0.f, 260.f);
+                centerTextX(nameText, 800.f);
 
                 sf::Text escText("ESC para volver al titulo", font, 18);
                 escText.setFillColor(sf::Color::White);
-                escText.setPosition(260.f, 320.f);
+                escText.setPosition(0.f, 320.f);
+                centerTextX(escText, 800.f);
 
                 window.draw(prompt);
                 window.draw(nameText);
@@ -846,14 +884,13 @@ int main()
         else {
             Level &lvl = levels[currentLevelIndex];
 
-            // Dibujar nivel
             window.draw(lvl.ground.shape);
             for (auto& p : lvl.platforms)  window.draw(p.shape);
             for (auto& o : lvl.obstacles)  window.draw(o);
+            for (auto& s : lvl.spikes)     window.draw(s.shape);
             window.draw(lvl.goal);
             window.draw(ball);
 
-            // HUD
             if (font.getInfo().family != "") {
                 sf::Text levelText("Nivel " + std::to_string(currentLevelIndex + 1), font, 20);
                 levelText.setFillColor(sf::Color::Black);
@@ -872,7 +909,6 @@ int main()
                 totalText.setPosition(10.f, 55.f);
                 window.draw(totalText);
 
-                // Leyenda para resetear posición
                 sf::Text resetHint("Presione \"D\" para reiniciar la posicion", font, 16);
                 resetHint.setFillColor(sf::Color::Black);
                 resetHint.setOutlineColor(sf::Color::White);
@@ -882,18 +918,19 @@ int main()
                 window.draw(resetHint);
             }
 
-            // Mensajes de estado
             if (state == GameState::LevelComplete && font.getInfo().family != "") {
                 sf::Text msg("Nivel completado!", font, 40);
                 msg.setFillColor(sf::Color::Yellow);
                 msg.setOutlineColor(sf::Color::Black);
                 msg.setOutlineThickness(2.f);
-                msg.setPosition(200.f, 230.f);
+                msg.setPosition(0.f, 230.f);
+                centerTextX(msg, 800.f);
                 window.draw(msg);
 
                 sf::Text press("Presiona ENTER para continuar", font, 24);
                 press.setFillColor(sf::Color::White);
-                press.setPosition(190.f, 290.f);
+                press.setPosition(0.f, 290.f);
+                centerTextX(press, 800.f);
                 window.draw(press);
             }
 
@@ -902,18 +939,20 @@ int main()
                 msg.setFillColor(sf::Color::Yellow);
                 msg.setOutlineColor(sf::Color::Black);
                 msg.setOutlineThickness(2.f);
-                msg.setPosition(90.f, 40.f);
+                msg.setPosition(0.f, 40.f);
+                centerTextX(msg, 800.f);
                 window.draw(msg);
 
                 sf::Text press("Presiona R para volver al titulo", font, 22);
                 press.setFillColor(sf::Color::White);
-                press.setPosition(200.f, 90.f);
+                press.setPosition(0.f, 90.f);
+                centerTextX(press, 800.f);
                 window.draw(press);
 
-                // Tabla de ranking
                 sf::Text rankTitle("Ranking (mejores tiempos totales)", font, 24);
                 rankTitle.setFillColor(sf::Color::White);
-                rankTitle.setPosition(130.f, 150.f);
+                rankTitle.setPosition(0.f, 150.f);
+                centerTextX(rankTitle, 800.f);
                 window.draw(rankTitle);
 
                 int maxLines = static_cast<int>(std::min<std::size_t>(highScores.size(), 8));
@@ -925,8 +964,6 @@ int main()
                         " - " + std::to_string(static_cast<int>(ps.time)) + " s";
 
                     sf::Text lineText(line, font, 22);
-
-                    // Resaltar al jugador actual si coincide nombre y tiempo (aprox)
                     if (!playerName.empty() &&
                         ps.name == playerName &&
                         std::fabs(ps.time - totalRunTime) < 0.5f) {
@@ -934,7 +971,6 @@ int main()
                     } else {
                         lineText.setFillColor(sf::Color::White);
                     }
-
                     lineText.setPosition(180.f, 190.f + i * 28.f);
                     window.draw(lineText);
                 }
