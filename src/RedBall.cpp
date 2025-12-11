@@ -202,8 +202,8 @@ int main()
     // Física simple (la que ya tenías)
     sf::Vector2f velocity(0.f, 0.f);
     const float gravity = 0.5f;
-    const float acceleration = 0.8f;
-    const float maxSpeed = 8.0f;
+    const float acceleration = 1.2f;
+    const float maxSpeed = 12.0f;
     const float jumpForce = -15.0f;
     const float friction = 0.85f;
     bool onGround = false;
@@ -320,9 +320,9 @@ int main()
 
             // Control horizontal simple
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
-                velocity.x -= acceleration;
+                velocity.x -= acceleration * dt * 60.0f;
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
-                velocity.x += acceleration;
+                velocity.x += acceleration * dt * 60.0f;
 
             // Salto
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space) && onGround) {
@@ -330,18 +330,25 @@ int main()
                 onGround = false;
             }
 
+            // Resetear posición con D (sin reiniciar timer)
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
+                ball.setPosition(lvl.spawn);
+                velocity = sf::Vector2f(0.f, 0.f);
+                onGround = false;
+            }
+
             // Fricción
-            velocity.x *= friction;
+            velocity.x *= std::pow(friction, dt * 60.0f);
 
             // Limitar velocidad horizontal
             if (velocity.x > maxSpeed) velocity.x = maxSpeed;
             if (velocity.x < -maxSpeed) velocity.x = -maxSpeed;
 
             // Gravedad
-            velocity.y += gravity;
+            velocity.y += gravity * dt * 60.0f;
 
             // Actualizar posición
-            ball.move(velocity);
+            ball.move(velocity * dt * 60.0f);
 
             // Reset onGround
             onGround = false;
@@ -369,23 +376,45 @@ int main()
                     sf::Vector2f platformPos = platform.shape.getPosition();
                     sf::Vector2f platformSize = platform.shape.getSize();
 
-                    if (velocity.y > 0 && ballPos.y < platformPos.y + platformSize.y / 2)
+                    // Calcular el centro de la plataforma y la bola
+                    float ballCenterY = ballPos.y;
+                    float platformCenterY = platformPos.y + platformSize.y / 2.0f;
+                    float ballCenterX = ballPos.x;
+                    float platformCenterX = platformPos.x + platformSize.x / 2.0f;
+
+                    // Calcular la penetración en cada dirección
+                    float overlapLeft = (ballPos.x + 25.f) - pBounds.left;
+                    float overlapRight = (pBounds.left + pBounds.width) - (ballPos.x - 25.f);
+                    float overlapTop = (ballPos.y + 25.f) - pBounds.top;
+                    float overlapBottom = (pBounds.top + pBounds.height) - (ballPos.y - 25.f);
+
+                    // Encontrar la menor penetración para determinar el lado de la colisión
+                    float minOverlap = std::min({overlapLeft, overlapRight, overlapTop, overlapBottom});
+
+                    // Resolver la colisión basándose en la menor penetración
+                    if (minOverlap == overlapTop && velocity.y > 0)
                     {
+                        // Colisión desde arriba
                         ball.setPosition(ballPos.x, pBounds.top - 25.f);
                         velocity.y = 0;
                         onGround = true;
                     }
-                    else if (velocity.y < 0 && ballPos.y > platformPos.y + platformSize.y / 2)
+                    else if (minOverlap == overlapBottom && velocity.y < 0)
                     {
+                        // Colisión desde abajo
                         ball.setPosition(ballPos.x, pBounds.top + pBounds.height + 25.f);
                         velocity.y = 0;
                     }
-                    else
+                    else if (minOverlap == overlapLeft)
                     {
-                        if (ballPos.x < platformPos.x)
-                            ball.setPosition(pBounds.left - 25.f, ballPos.y);
-                        else
-                            ball.setPosition(pBounds.left + pBounds.width + 25.f, ballPos.y);
+                        // Colisión desde la izquierda
+                        ball.setPosition(pBounds.left - 25.f, ballPos.y);
+                        velocity.x = 0;
+                    }
+                    else if (minOverlap == overlapRight)
+                    {
+                        // Colisión desde la derecha
+                        ball.setPosition(pBounds.left + pBounds.width + 25.f, ballPos.y);
                         velocity.x = 0;
                     }
 
@@ -404,6 +433,20 @@ int main()
             {
                 ball.setPosition(775.f, ballPos.y);
                 velocity.x = 0;
+            }
+
+            // Colisión con obstáculos mortales (cuadrados negros)
+            for (const auto& obstacle : lvl.obstacles)
+            {
+                sf::FloatRect obsBounds = obstacle.getGlobalBounds();
+                if (ballBounds.intersects(obsBounds))
+                {
+                    // Obstáculo mortal: resetear posición
+                    ball.setPosition(lvl.spawn);
+                    velocity = sf::Vector2f(0.f, 0.f);
+                    onGround = false;
+                    break;
+                }
             }
 
             // Caer fuera de pantalla: reinicia nivel pero mantiene totalRunTime
@@ -497,6 +540,15 @@ int main()
                 totalText.setFillColor(sf::Color::Black);
                 totalText.setPosition(10.f, 55.f);
                 window.draw(totalText);
+
+                // Leyenda para resetear posición
+                sf::Text resetHint("Presione \"D\" para reiniciar la posicion", font, 16);
+                resetHint.setFillColor(sf::Color::Black);
+                resetHint.setOutlineColor(sf::Color::White);
+                resetHint.setOutlineThickness(1.f);
+                sf::FloatRect hintBounds = resetHint.getLocalBounds();
+                resetHint.setPosition(800.f - hintBounds.width - 10.f, 10.f);
+                window.draw(resetHint);
             }
 
             // Mensajes de estado
