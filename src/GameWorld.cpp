@@ -42,7 +42,7 @@ Level createLevel2() {
     level.ground.shape.setFillColor(sf::Color(34, 139, 34));
     level.ground.bounds = level.ground.shape.getGlobalBounds();
 
-    level.platforms.emplace_back(80.f, 480.f, 140.f, 20.f);
+    level.platforms.emplace_back(80.f, 450.f, 140.f, 20.f);
     level.platforms.emplace_back(260.f, 420.f, 140.f, 20.f);
     level.platforms.emplace_back(440.f, 360.f, 140.f, 20.f);
     level.platforms.emplace_back(620.f, 300.f, 140.f, 20.f);
@@ -54,12 +54,12 @@ Level createLevel2() {
     level.obstacles.push_back(obs1);
 
     // Pico estático sobre la primera plataforma
-    level.spikes.push_back(createSpike(110.f, 480.f - 18.f, 40.f, 18.f));
+    level.spikes.push_back(createSpike(110.f, 450.f - 18.f, 40.f, 18.f));
 
     // Pico móvil sobre la tercera plataforma (se mueve de izquierda a derecha)
     level.spikes.push_back(
         createSpike(460.f, 360.f - 18.f, 40.f, 18.f,
-                    true, 450.f, 520.f, 70.f) // minX, maxX, speed
+                    true, 440.f, 540.f, 70.f) // minX, maxX, speed (ajustado para no salirse)
     );
 
     level.goal = sf::CircleShape(20.f, 5);
@@ -69,7 +69,7 @@ Level createLevel2() {
     level.goal.setOutlineColor(sf::Color(255, 215, 0));
     level.goal.setOutlineThickness(3.f);
 
-    level.spawn = sf::Vector2f(70.f, 520.f);
+    level.spawn = sf::Vector2f(70.f, 540.f);
 
     return level;
 }
@@ -98,7 +98,7 @@ Level createLevel3() {
     // Pico móvil sobre la cuarta plataforma
     level.spikes.push_back(
         createSpike(600.f, 290.f - 20.f, 40.f, 20.f,
-                    true, 580.f, 680.f, 80.f)
+                    true, 580.f, 660.f, 80.f)
     );
 
     level.goal = sf::CircleShape(20.f, 5);
@@ -119,7 +119,7 @@ Level createLevel4() {
     level.ground.shape.setFillColor(sf::Color(34, 139, 34));
     level.ground.bounds = level.ground.shape.getGlobalBounds();
 
-    level.platforms.emplace_back(60.f, 500.f, 120.f, 20.f);
+    level.platforms.emplace_back(60.f, 450.f, 120.f, 20.f);
     level.platforms.emplace_back(220.f, 440.f, 120.f, 20.f);
     level.platforms.emplace_back(380.f, 380.f, 120.f, 20.f);
     level.platforms.emplace_back(540.f, 320.f, 120.f, 20.f);
@@ -140,7 +140,7 @@ Level createLevel4() {
     level.spikes.push_back(createSpike(410.f, 380.f - 18.f, 40.f, 18.f));
     level.spikes.push_back(
         createSpike(560.f, 320.f - 18.f, 40.f, 18.f,
-                    true, 540.f, 650.f, 90.f)
+                    true, 540.f, 620.f, 90.f)
     );
 
     level.goal = sf::CircleShape(20.f, 5);
@@ -161,9 +161,9 @@ Level createLevel5() {
     level.ground.shape.setFillColor(sf::Color(34, 139, 34));
     level.ground.bounds = level.ground.shape.getGlobalBounds();
 
-    level.platforms.emplace_back(50.f, 450.f, 200.f, 20.f);
-    level.platforms.emplace_back(320.f, 450.f, 160.f, 20.f);
-    level.platforms.emplace_back(560.f, 450.f, 180.f, 20.f);
+    level.platforms.emplace_back(50.f, 440.f, 200.f, 20.f);
+    level.platforms.emplace_back(320.f, 440.f, 160.f, 20.f);
+    level.platforms.emplace_back(560.f, 440.f, 180.f, 20.f);
 
     level.platforms.emplace_back(200.f, 350.f, 120.f, 20.f);
     level.platforms.emplace_back(440.f, 320.f, 120.f, 20.f);
@@ -183,12 +183,12 @@ Level createLevel5() {
 
     level.goal = sf::CircleShape(20.f, 5);
     level.goal.setOrigin(20.f, 20.f);
-    level.goal.setPosition(720.f, 410.f);
+    level.goal.setPosition(720.f, 400.f);
     level.goal.setFillColor(sf::Color::Yellow);
     level.goal.setOutlineColor(sf::Color(255, 215, 0));
     level.goal.setOutlineThickness(3.f);
 
-    level.spawn = sf::Vector2f(80.f, 420.f);
+    level.spawn = sf::Vector2f(80.f, 410.f);
 
     return level;
 }
@@ -199,7 +199,7 @@ Level createLevel6() {
     level.ground.shape.setFillColor(sf::Color(34, 139, 34));
     level.ground.bounds = level.ground.shape.getGlobalBounds();
 
-    level.platforms.emplace_back(80.f, 500.f, 90.f, 20.f);
+    level.platforms.emplace_back(80.f, 450.f, 90.f, 20.f);
     level.platforms.emplace_back(220.f, 430.f, 90.f, 20.f);
     level.platforms.emplace_back(360.f, 360.f, 90.f, 20.f);
     level.platforms.emplace_back(500.f, 290.f, 90.f, 20.f);
@@ -218,7 +218,7 @@ Level createLevel6() {
     // Pico móvil sobre la cuarta plataforma
     level.spikes.push_back(
         createSpike(510.f, 290.f - 18.f, 40.f, 18.f,
-                    true, 500.f, 620.f, 110.f)
+                    true, 500.f, 550.f, 110.f)
     );
 
     // Pico estático sobre la tercera
@@ -242,9 +242,9 @@ Level createLevel7() {
     level.ground.shape.setFillColor(sf::Color(34, 139, 34));
     level.ground.bounds = level.ground.shape.getGlobalBounds();
 
-    level.platforms.emplace_back(60.f, 500.f, 140.f, 20.f);
-    level.platforms.emplace_back(260.f, 500.f, 140.f, 20.f);
-    level.platforms.emplace_back(460.f, 500.f, 140.f, 20.f);
+    level.platforms.emplace_back(60.f, 440.f, 140.f, 20.f);
+    level.platforms.emplace_back(260.f, 440.f, 140.f, 20.f);
+    level.platforms.emplace_back(460.f, 440.f, 140.f, 20.f);
 
     level.platforms.emplace_back(200.f, 380.f, 120.f, 20.f);
     level.platforms.emplace_back(400.f, 340.f, 120.f, 20.f);
@@ -259,7 +259,7 @@ Level createLevel7() {
     level.spikes.push_back(createSpike(230.f, 380.f - 18.f, 40.f, 18.f));
     level.spikes.push_back(
         createSpike(430.f, 340.f - 18.f, 40.f, 18.f,
-                    true, 400.f, 500.f, 120.f)
+                    true, 400.f, 480.f, 120.f)
     );
     level.spikes.push_back(createSpike(640.f, 300.f - 18.f, 40.f, 18.f));
 
@@ -270,7 +270,7 @@ Level createLevel7() {
     level.goal.setOutlineColor(sf::Color(255, 215, 0));
     level.goal.setOutlineThickness(3.f);
 
-    level.spawn = sf::Vector2f(80.f, 520.f);
+    level.spawn = sf::Vector2f(80.f, 540.f);
 
     return level;
 }
@@ -281,7 +281,7 @@ Level createLevel8() {
     level.ground.shape.setFillColor(sf::Color(34, 139, 34));
     level.ground.bounds = level.ground.shape.getGlobalBounds();
 
-    level.platforms.emplace_back(150.f, 500.f, 160.f, 20.f);
+    level.platforms.emplace_back(150.f, 450.f, 160.f, 20.f);
     level.platforms.emplace_back(320.f, 430.f, 160.f, 20.f);
     level.platforms.emplace_back(490.f, 360.f, 160.f, 20.f);
     level.platforms.emplace_back(660.f, 290.f, 120.f, 20.f);
@@ -296,7 +296,7 @@ Level createLevel8() {
     level.spikes.push_back(createSpike(360.f, 430.f - 18.f, 40.f, 18.f));
     level.spikes.push_back(
         createSpike(520.f, 360.f - 18.f, 40.f, 18.f,
-                    true, 510.f, 610.f, 130.f)
+                    true, 490.f, 610.f, 130.f)
     );
 
     level.goal = sf::CircleShape(20.f, 5);
@@ -317,9 +317,9 @@ Level createLevel9() {
     level.ground.shape.setFillColor(sf::Color(34, 139, 34));
     level.ground.bounds = level.ground.shape.getGlobalBounds();
 
-    level.platforms.emplace_back(80.f, 500.f, 120.f, 20.f);
-    level.platforms.emplace_back(260.f, 500.f, 120.f, 20.f);
-    level.platforms.emplace_back(440.f, 500.f, 120.f, 20.f);
+    level.platforms.emplace_back(80.f, 440.f, 120.f, 20.f);
+    level.platforms.emplace_back(260.f, 440.f, 120.f, 20.f);
+    level.platforms.emplace_back(440.f, 440.f, 120.f, 20.f);
 
     level.platforms.emplace_back(150.f, 420.f, 100.f, 20.f);
     level.platforms.emplace_back(350.f, 380.f, 100.f, 20.f);
@@ -342,7 +342,7 @@ Level createLevel9() {
     level.spikes.push_back(createSpike(180.f, 420.f - 18.f, 40.f, 18.f));
     level.spikes.push_back(
         createSpike(370.f, 380.f - 18.f, 40.f, 18.f,
-                    true, 350.f, 430.f, 130.f)
+                    true, 350.f, 410.f, 130.f)
     );
     level.spikes.push_back(createSpike(480.f, 260.f - 18.f, 40.f, 18.f));
 
@@ -353,7 +353,7 @@ Level createLevel9() {
     level.goal.setOutlineColor(sf::Color(255, 215, 0));
     level.goal.setOutlineThickness(3.f);
 
-    level.spawn = sf::Vector2f(90.f, 520.f);
+    level.spawn = sf::Vector2f(90.f, 540.f);
 
     return level;
 }
@@ -364,7 +364,7 @@ Level createLevel10() {
     level.ground.shape.setFillColor(sf::Color(34, 139, 34));
     level.ground.bounds = level.ground.shape.getGlobalBounds();
 
-    level.platforms.emplace_back(80.f, 500.f, 90.f, 20.f);
+    level.platforms.emplace_back(80.f, 450.f, 90.f, 20.f);
     level.platforms.emplace_back(200.f, 440.f, 90.f, 20.f);
     level.platforms.emplace_back(320.f, 380.f, 90.f, 20.f);
     level.platforms.emplace_back(440.f, 320.f, 90.f, 20.f);
@@ -391,11 +391,11 @@ Level createLevel10() {
     level.spikes.push_back(createSpike(340.f, 380.f - 18.f, 40.f, 18.f));
     level.spikes.push_back(
         createSpike(460.f, 320.f - 18.f, 40.f, 18.f,
-                    true, 440.f, 520.f, 150.f)
+                    true, 440.f, 490.f, 150.f)
     );
     level.spikes.push_back(
         createSpike(580.f, 260.f - 18.f, 40.f, 18.f,
-                    true, 560.f, 680.f, 170.f)
+                    true, 560.f, 610.f, 170.f)
     );
 
     level.goal = sf::CircleShape(20.f, 5);

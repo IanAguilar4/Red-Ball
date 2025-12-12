@@ -7,6 +7,20 @@
 #include "PlayerScore.hpp"
 #include "Utils.hpp"
 
+// Función auxiliar para verificar colisión círculo-rectángulo
+bool circleRectCollision(sf::Vector2f circleCenter, float circleRadius, sf::FloatRect rect) {
+    // Encontrar el punto más cercano del rectángulo al centro del círculo
+    float closestX = std::max(rect.left, std::min(circleCenter.x, rect.left + rect.width));
+    float closestY = std::max(rect.top, std::min(circleCenter.y, rect.top + rect.height));
+    
+    // Calcular la distancia entre el centro del círculo y el punto más cercano
+    float distanceX = circleCenter.x - closestX;
+    float distanceY = circleCenter.y - closestY;
+    float distanceSquared = (distanceX * distanceX) + (distanceY * distanceY);
+    
+    return distanceSquared < (circleRadius * circleRadius);
+}
+
 int main()
 {
     sf::RenderWindow window(sf::VideoMode(800, 600), "Blue Balls - Niveles");
@@ -15,14 +29,6 @@ int main()
     sf::Font font;
     if (!font.loadFromFile("assets/fonts/arialbd.ttf")) {
         std::cout << "Error: No se pudo cargar la fuente (assets/fonts/arialbd.ttf)" << std::endl;
-    }
-
-    // Textura para la bola
-    sf::Texture ballTexture;
-    if (!ballTexture.loadFromFile("assets/sprites/blueface.png")) {
-        std::cout << "Error: No se pudo cargar la textura de la bola (assets/sprites/blueface.png)" << std::endl;
-    } else {
-        ballTexture.setSmooth(true);
     }
 
     // Scores
@@ -50,9 +56,10 @@ int main()
     // Jugador
     sf::CircleShape ball(25.f);
     ball.setOrigin(25.f, 25.f);
-    ball.setFillColor(sf::Color::White);
-    ball.setOutlineColor(sf::Color::Transparent);
-    ball.setTexture(&ballTexture);
+    ball.setFillColor(sf::Color::Blue);
+    
+    // Radio para colisiones (sprite y hitbox del mismo tamaño)
+    const float ballRadius = 25.f;
 
     // Física
     sf::Vector2f velocity(0.f, 0.f);
@@ -217,78 +224,82 @@ int main()
             onGround = false;
 
             // Colisión con suelo
-            sf::FloatRect ballBounds = ball.getGlobalBounds();
-            if (ballBounds.intersects(lvl.ground.bounds))
+            sf::Vector2f ballPos = ball.getPosition();
+            if (ballPos.y + ballRadius >= lvl.ground.bounds.top && ballPos.y - ballRadius < lvl.ground.bounds.top + lvl.ground.bounds.height)
             {
-                if (velocity.y > 0)
+                if (velocity.y > 0 && ballPos.y < lvl.ground.bounds.top + ballRadius)
                 {
-                    ball.setPosition(ball.getPosition().x, lvl.ground.bounds.top - 25.f);
+                    ball.setPosition(ballPos.x, lvl.ground.bounds.top - ballRadius);
                     velocity.y = 0;
                     onGround = true;
+                    ballPos = ball.getPosition();
                 }
-                ballBounds = ball.getGlobalBounds();
             }
+            
+            sf::FloatRect ballBounds = ball.getGlobalBounds();
 
             // Colisión con plataformas
             for (auto& platform : lvl.platforms)
             {
                 sf::FloatRect pBounds = platform.bounds;
-                if (ballBounds.intersects(pBounds))
+                ballPos = ball.getPosition();
+                
+                // Verificar si la bola está cerca de la plataforma
+                if (ballPos.x + ballRadius > pBounds.left && ballPos.x - ballRadius < pBounds.left + pBounds.width &&
+                    ballPos.y + ballRadius > pBounds.top && ballPos.y - ballRadius < pBounds.top + pBounds.height)
                 {
-                    sf::Vector2f ballPos = ball.getPosition();
-
-                    float overlapLeft   = (ballPos.x + 25.f) - pBounds.left;
-                    float overlapRight  = (pBounds.left + pBounds.width) - (ballPos.x - 25.f);
-                    float overlapTop    = (ballPos.y + 25.f) - pBounds.top;
-                    float overlapBottom = (pBounds.top + pBounds.height) - (ballPos.y - 25.f);
+                    float overlapLeft   = (ballPos.x + ballRadius) - pBounds.left;
+                    float overlapRight  = (pBounds.left + pBounds.width) - (ballPos.x - ballRadius);
+                    float overlapTop    = (ballPos.y + ballRadius) - pBounds.top;
+                    float overlapBottom = (pBounds.top + pBounds.height) - (ballPos.y - ballRadius);
 
                     float minOverlap = std::min({overlapLeft, overlapRight, overlapTop, overlapBottom});
 
                     if (minOverlap == overlapTop && velocity.y > 0)
                     {
-                        ball.setPosition(ballPos.x, pBounds.top - 25.f);
+                        ball.setPosition(ballPos.x, pBounds.top - ballRadius);
                         velocity.y = 0;
                         onGround = true;
                     }
                     else if (minOverlap == overlapBottom && velocity.y < 0)
                     {
-                        ball.setPosition(ballPos.x, pBounds.top + pBounds.height + 25.f);
+                        ball.setPosition(ballPos.x, pBounds.top + pBounds.height + ballRadius);
                         velocity.y = 0;
                     }
                     else if (minOverlap == overlapLeft)
                     {
-                        ball.setPosition(pBounds.left - 25.f, ballPos.y);
+                        ball.setPosition(pBounds.left - ballRadius, ballPos.y);
                         velocity.x = 0;
                     }
                     else if (minOverlap == overlapRight)
                     {
-                        ball.setPosition(pBounds.left + pBounds.width + 25.f, ballPos.y);
+                        ball.setPosition(pBounds.left + pBounds.width + ballRadius, ballPos.y);
                         velocity.x = 0;
                     }
-
-                    ballBounds = ball.getGlobalBounds();
                 }
             }
+            
+            ballBounds = ball.getGlobalBounds();
 
             // Bordes de ventana
-            sf::Vector2f ballPos = ball.getPosition();
-            if (ballPos.x < 25.f)
+            ballPos = ball.getPosition();
+            if (ballPos.x < ballRadius)
             {
-                ball.setPosition(25.f, ballPos.y);
+                ball.setPosition(ballRadius, ballPos.y);
                 velocity.x = 0;
             }
-            if (ballPos.x > 775.f)
+            if (ballPos.x > 800.f - ballRadius)
             {
-                ball.setPosition(775.f, ballPos.y);
+                ball.setPosition(800.f - ballRadius, ballPos.y);
                 velocity.x = 0;
             }
 
             // Colisión con obstáculos (bloques mortales)
-            ballBounds = ball.getGlobalBounds();
+            ballPos = ball.getPosition();
             for (const auto& obstacle : lvl.obstacles)
             {
                 sf::FloatRect obsBounds = obstacle.getGlobalBounds();
-                if (ballBounds.intersects(obsBounds))
+                if (circleRectCollision(ballPos, ballRadius, obsBounds))
                 {
                     ball.setPosition(lvl.spawn);
                     velocity = sf::Vector2f(0.f, 0.f);
@@ -298,11 +309,11 @@ int main()
             }
 
             // Colisión con picos (mortales)
-            ballBounds = ball.getGlobalBounds();
+            ballPos = ball.getPosition();
             for (const auto& spike : lvl.spikes)
             {
                 sf::FloatRect sBounds = spike.shape.getGlobalBounds();
-                if (ballBounds.intersects(sBounds))
+                if (circleRectCollision(ballPos, ballRadius, sBounds))
                 {
                     ball.setPosition(lvl.spawn);
                     velocity = sf::Vector2f(0.f, 0.f);
