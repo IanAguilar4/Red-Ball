@@ -17,9 +17,9 @@ está en no fallar.
 
     Diseñados para ser simples, directos y brutales:
 
-    A / D → Moverse a la izquierda / derecha
+    <- / -> → Moverse a la izquierda / derecha
 
-    W → Saltar
+    Espacio → Saltar
 
     D → Reiniciar posición del nivel
 
@@ -27,7 +27,6 @@ está en no fallar.
 
     R → Volver al menú principal
 
-    ESC → Cancelar / regresar al título
 
 Fácil de aprender, difícil de dominar.
 
@@ -93,7 +92,11 @@ Código directo al punto.
 
     🎮 Inspirado en la saga Red Ball
 
-    🎨 Assets y diseño visual originales
+    🎨 Diseño visual original
+        Assets generados por IA:
+        Pistas 02 a 06
+        Assets creadas por otras personas:
+        Pista 01: Look Up Mastered. Creada por Alex McCulloch. Tomada de OpenGameArt.Org 
 
     🧠 Concepto y niveles diseñados desde cero
 

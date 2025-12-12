@@ -18,15 +18,15 @@ struct Level {
 };
 
 // Funciones para crear niveles
-Level createLevel1();
-Level createLevel2();
-Level createLevel3();
-Level createLevel4();
-Level createLevel5();
-Level createLevel6();
-Level createLevel7();
-Level createLevel8();
-Level createLevel9();
-Level createLevel10();
+Level CreateLevel1();
+Level CreateLevel2();
+Level CreateLevel3();
+Level CreateLevel4();
+Level CreateLevel5();
+Level CreateLevel6();
+Level CreateLevel7();
+Level CreateLevel8();
+Level CreateLevel9();
+Level CreateLevel10();
 
 #endif

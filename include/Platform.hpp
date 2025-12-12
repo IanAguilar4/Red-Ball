@@ -21,7 +21,7 @@ struct Spike {
 };
 
 // Helper para crear picos
-Spike createSpike(float x, float y, float width, float height,
+Spike CreateSpike(float x, float y, float width, float height,
                   bool moving = false, float minX = 0.f,
                   float maxX = 0.f, float speed = 0.f);
 

@@ -21,6 +21,10 @@ El proyecto ha sido refactorizado para una mejor organización y mantenibilidad:
 - **Utils.cpp** - Implementación de funciones utilitarias
 - **RedBall_backup.cpp** - Respaldo del archivo monolítico original (no se compila)
 
+### Archivos de Datos (`data/`)
+
+- **scores.txt** - Almacena las puntuaciones de los jugadores (nombre, nivel alcanzado, tiempo). Se genera automáticamente durante el juego y se actualiza cuando un jugador completa niveles.
+
 ## Compilación
 
 El makefile ha sido actualizado para compilar todos los archivos necesarios:

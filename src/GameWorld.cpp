@@ -6,7 +6,7 @@ Level::Level(float gx, float gy, float gw, float gh)
     : ground(gx, gy, gw, gh) {}
 
 // Nivel 1: muy básico
-Level createLevel1() {
+Level CreateLevel1() {
     Level level(0.f, 560.f, 800.f, 40.f);
     level.ground.shape.setFillColor(sf::Color(34, 139, 34));
     level.ground.bounds = level.ground.shape.getGlobalBounds();
@@ -22,7 +22,7 @@ Level createLevel1() {
     level.obstacles.push_back(obs1);
 
     // Pico estático sobre la segunda plataforma
-    level.spikes.push_back(createSpike(320.f, 370.f - 18.f, 40.f, 18.f));
+    level.spikes.push_back(CreateSpike(320.f, 370.f - 18.f, 40.f, 18.f));
 
     level.goal = sf::CircleShape(20.f, 5);
     level.goal.setOrigin(20.f, 20.f);
@@ -37,7 +37,7 @@ Level createLevel1() {
 }
 
 // Nivel 2: más vertical y un pico móvil suave
-Level createLevel2() {
+Level CreateLevel2() {
     Level level(0.f, 560.f, 800.f, 40.f);
     level.ground.shape.setFillColor(sf::Color(34, 139, 34));
     level.ground.bounds = level.ground.shape.getGlobalBounds();
@@ -54,11 +54,11 @@ Level createLevel2() {
     level.obstacles.push_back(obs1);
 
     // Pico estático sobre la primera plataforma
-    level.spikes.push_back(createSpike(110.f, 450.f - 18.f, 40.f, 18.f));
+    level.spikes.push_back(CreateSpike(110.f, 450.f - 18.f, 40.f, 18.f));
 
     // Pico móvil sobre la tercera plataforma (se mueve de izquierda a derecha)
     level.spikes.push_back(
-        createSpike(460.f, 360.f - 18.f, 40.f, 18.f,
+        CreateSpike(460.f, 360.f - 18.f, 40.f, 18.f,
                     true, 440.f, 540.f, 70.f) // minX, maxX, speed (ajustado para no salirse)
     );
 
@@ -75,7 +75,7 @@ Level createLevel2() {
 }
 
 // Nivel 3: torre sencilla con picos
-Level createLevel3() {
+Level CreateLevel3() {
     Level level(0.f, 560.f, 800.f, 40.f);
     level.ground.shape.setFillColor(sf::Color(34, 139, 34));
     level.ground.bounds = level.ground.shape.getGlobalBounds();
@@ -93,11 +93,11 @@ Level createLevel3() {
     level.obstacles.push_back(obs1);
 
     // Pico estático sobre la segunda plataforma
-    level.spikes.push_back(createSpike(290.f, 430.f - 18.f, 40.f, 18.f));
+    level.spikes.push_back(CreateSpike(290.f, 430.f - 18.f, 40.f, 18.f));
 
     // Pico móvil sobre la cuarta plataforma
     level.spikes.push_back(
-        createSpike(600.f, 290.f - 20.f, 40.f, 20.f,
+        CreateSpike(600.f, 290.f - 20.f, 40.f, 20.f,
                     true, 580.f, 660.f, 80.f)
     );
 
@@ -114,7 +114,7 @@ Level createLevel3() {
 }
 
 // Nivel 4: escalera larga
-Level createLevel4() {
+Level CreateLevel4() {
     Level level(0.f, 560.f, 800.f, 40.f);
     level.ground.shape.setFillColor(sf::Color(34, 139, 34));
     level.ground.bounds = level.ground.shape.getGlobalBounds();
@@ -137,9 +137,9 @@ Level createLevel4() {
     level.obstacles.push_back(obs2);
 
     // Picos sobre tercera y cuarta plataformas
-    level.spikes.push_back(createSpike(410.f, 380.f - 18.f, 40.f, 18.f));
+    level.spikes.push_back(CreateSpike(410.f, 380.f - 18.f, 40.f, 18.f));
     level.spikes.push_back(
-        createSpike(560.f, 320.f - 18.f, 40.f, 18.f,
+        CreateSpike(560.f, 320.f - 18.f, 40.f, 18.f,
                     true, 540.f, 620.f, 90.f)
     );
 
@@ -156,7 +156,7 @@ Level createLevel4() {
 }
 
 // Nivel 5: puentes con huecos
-Level createLevel5() {
+Level CreateLevel5() {
     Level level(0.f, 560.f, 800.f, 40.f);
     level.ground.shape.setFillColor(sf::Color(34, 139, 34));
     level.ground.bounds = level.ground.shape.getGlobalBounds();
@@ -175,9 +175,9 @@ Level createLevel5() {
     level.obstacles.push_back(obs3);
 
     // Picos sobre plataformas superiores
-    level.spikes.push_back(createSpike(230.f, 350.f - 18.f, 40.f, 18.f));
+    level.spikes.push_back(CreateSpike(230.f, 350.f - 18.f, 40.f, 18.f));
     level.spikes.push_back(
-        createSpike(460.f, 320.f - 18.f, 40.f, 18.f,
+        CreateSpike(460.f, 320.f - 18.f, 40.f, 18.f,
                     true, 440.f, 520.f, 100.f)
     );
 
@@ -194,7 +194,7 @@ Level createLevel5() {
 }
 
 // Nivel 6: plataformas pequeñas
-Level createLevel6() {
+Level CreateLevel6() {
     Level level(0.f, 560.f, 800.f, 40.f);
     level.ground.shape.setFillColor(sf::Color(34, 139, 34));
     level.ground.bounds = level.ground.shape.getGlobalBounds();
@@ -217,12 +217,12 @@ Level createLevel6() {
 
     // Pico móvil sobre la cuarta plataforma
     level.spikes.push_back(
-        createSpike(510.f, 290.f - 18.f, 40.f, 18.f,
+        CreateSpike(510.f, 290.f - 18.f, 40.f, 18.f,
                     true, 500.f, 550.f, 110.f)
     );
 
     // Pico estático sobre la tercera
-    level.spikes.push_back(createSpike(380.f, 360.f - 18.f, 40.f, 18.f));
+    level.spikes.push_back(CreateSpike(380.f, 360.f - 18.f, 40.f, 18.f));
 
     level.goal = sf::CircleShape(20.f, 5);
     level.goal.setOrigin(20.f, 20.f);
@@ -237,7 +237,7 @@ Level createLevel6() {
 }
 
 // Nivel 7: mezcla bajas/altas
-Level createLevel7() {
+Level CreateLevel7() {
     Level level(0.f, 560.f, 800.f, 40.f);
     level.ground.shape.setFillColor(sf::Color(34, 139, 34));
     level.ground.bounds = level.ground.shape.getGlobalBounds();
@@ -256,12 +256,12 @@ Level createLevel7() {
     level.obstacles.push_back(obs1);
 
     // Picos sobre plataformas altas
-    level.spikes.push_back(createSpike(230.f, 380.f - 18.f, 40.f, 18.f));
+    level.spikes.push_back(CreateSpike(230.f, 380.f - 18.f, 40.f, 18.f));
     level.spikes.push_back(
-        createSpike(430.f, 340.f - 18.f, 40.f, 18.f,
+        CreateSpike(430.f, 340.f - 18.f, 40.f, 18.f,
                     true, 400.f, 480.f, 120.f)
     );
-    level.spikes.push_back(createSpike(640.f, 300.f - 18.f, 40.f, 18.f));
+    level.spikes.push_back(CreateSpike(640.f, 300.f - 18.f, 40.f, 18.f));
 
     level.goal = sf::CircleShape(20.f, 5);
     level.goal.setOrigin(20.f, 20.f);
@@ -276,7 +276,7 @@ Level createLevel7() {
 }
 
 // Nivel 8: camino largo con techos peligrosos
-Level createLevel8() {
+Level CreateLevel8() {
     Level level(0.f, 560.f, 800.f, 40.f);
     level.ground.shape.setFillColor(sf::Color(34, 139, 34));
     level.ground.bounds = level.ground.shape.getGlobalBounds();
@@ -293,9 +293,9 @@ Level createLevel8() {
     level.obstacles.push_back(obsFloor);
 
     // Picos sobre segunda y tercera plataformas
-    level.spikes.push_back(createSpike(360.f, 430.f - 18.f, 40.f, 18.f));
+    level.spikes.push_back(CreateSpike(360.f, 430.f - 18.f, 40.f, 18.f));
     level.spikes.push_back(
-        createSpike(520.f, 360.f - 18.f, 40.f, 18.f,
+        CreateSpike(520.f, 360.f - 18.f, 40.f, 18.f,
                     true, 490.f, 610.f, 130.f)
     );
 
@@ -312,7 +312,7 @@ Level createLevel8() {
 }
 
 // Nivel 9: muchas rutas
-Level createLevel9() {
+Level CreateLevel9() {
     Level level(0.f, 560.f, 800.f, 40.f);
     level.ground.shape.setFillColor(sf::Color(34, 139, 34));
     level.ground.bounds = level.ground.shape.getGlobalBounds();
@@ -339,12 +339,12 @@ Level createLevel9() {
     level.obstacles.push_back(obs2);
 
     // Picos varios
-    level.spikes.push_back(createSpike(180.f, 420.f - 18.f, 40.f, 18.f));
+    level.spikes.push_back(CreateSpike(180.f, 420.f - 18.f, 40.f, 18.f));
     level.spikes.push_back(
-        createSpike(370.f, 380.f - 18.f, 40.f, 18.f,
+        CreateSpike(370.f, 380.f - 18.f, 40.f, 18.f,
                     true, 350.f, 410.f, 130.f)
     );
-    level.spikes.push_back(createSpike(480.f, 260.f - 18.f, 40.f, 18.f));
+    level.spikes.push_back(CreateSpike(480.f, 260.f - 18.f, 40.f, 18.f));
 
     level.goal = sf::CircleShape(20.f, 5);
     level.goal.setOrigin(20.f, 20.f);
@@ -359,7 +359,7 @@ Level createLevel9() {
 }
 
 // Nivel 10: final vertical
-Level createLevel10() {
+Level CreateLevel10() {
     Level level(0.f, 560.f, 800.f, 40.f);
     level.ground.shape.setFillColor(sf::Color(34, 139, 34));
     level.ground.bounds = level.ground.shape.getGlobalBounds();
@@ -387,14 +387,14 @@ Level createLevel10() {
     level.obstacles.push_back(obs3);
 
     // Picos complicados al final
-    level.spikes.push_back(createSpike(220.f, 440.f - 18.f, 40.f, 18.f));
-    level.spikes.push_back(createSpike(340.f, 380.f - 18.f, 40.f, 18.f));
+    level.spikes.push_back(CreateSpike(220.f, 440.f - 18.f, 40.f, 18.f));
+    level.spikes.push_back(CreateSpike(340.f, 380.f - 18.f, 40.f, 18.f));
     level.spikes.push_back(
-        createSpike(460.f, 320.f - 18.f, 40.f, 18.f,
+        CreateSpike(460.f, 320.f - 18.f, 40.f, 18.f,
                     true, 440.f, 490.f, 150.f)
     );
     level.spikes.push_back(
-        createSpike(580.f, 260.f - 18.f, 40.f, 18.f,
+        CreateSpike(580.f, 260.f - 18.f, 40.f, 18.f,
                     true, 560.f, 610.f, 170.f)
     );
 

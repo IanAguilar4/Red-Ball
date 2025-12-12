@@ -8,13 +8,13 @@ class Window {
 public:
     Window(int width, int height, const std::string& title);
     
-    bool isOpen() const;
-    void close();
-    void clear(sf::Color color = sf::Color::White);
-    void display();
-    void draw(const sf::Drawable& drawable);
-    bool pollEvent(sf::Event& event);
-    sf::Vector2u getSize() const;
+    bool IsOpen() const;
+    void Close();
+    void Clear(sf::Color color = sf::Color::White);
+    void Display();
+    void Draw(const sf::Drawable& drawable);
+    bool PollEvent(sf::Event& event);
+    sf::Vector2u GetSize() const;
     
 private:
     sf::RenderWindow window;

@@ -9,11 +9,11 @@ public:
     RedBall(b2World* world, float radius, float x, float y);
     ~RedBall();
     
-    void applyForce(float x, float y);
-    void applyImpulse(float x, float y);
-    sf::Vector2f getPosition() const;
-    sf::CircleShape getShape() const;
-    b2Body* getBody();
+    void ApplyForce(float x, float y);
+    void ApplyImpulse(float x, float y);
+    sf::Vector2f GetPosition() const;
+    sf::CircleShape GetShape() const;
+    b2Body* GetBody();
     
 private:
     b2Body* body;

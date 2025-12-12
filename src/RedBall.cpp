@@ -10,7 +10,7 @@
 #include "Utils.hpp"
 
 // Función auxiliar para verificar colisión círculo-rectángulo
-bool circleRectCollision(sf::Vector2f circleCenter, float circleRadius, sf::FloatRect rect) {
+bool CircleRectCollision(sf::Vector2f circleCenter, float circleRadius, sf::FloatRect rect) {
     // Encontrar el punto más cercano del rectángulo al centro del círculo
     float closestX = std::max(rect.left, std::min(circleCenter.x, rect.left + rect.width));
     float closestY = std::max(rect.top, std::min(circleCenter.y, rect.top + rect.height));
@@ -67,23 +67,23 @@ int main()
 
     // Scores
     std::vector<PlayerScore> highScores;
-    loadScores("scores.txt", highScores);
+    LoadScores("data/scores.txt", highScores);
 
     std::string playerName;
     std::string nameInputBuffer;
 
     // Definir niveles
     std::vector<Level> levels;
-    levels.push_back(createLevel1());
-    levels.push_back(createLevel2());
-    levels.push_back(createLevel3());
-    levels.push_back(createLevel4());
-    levels.push_back(createLevel5());
-    levels.push_back(createLevel6());
-    levels.push_back(createLevel7());
-    levels.push_back(createLevel8());
-    levels.push_back(createLevel9());
-    levels.push_back(createLevel10());
+    levels.push_back(CreateLevel1());
+    levels.push_back(CreateLevel2());
+    levels.push_back(CreateLevel3());
+    levels.push_back(CreateLevel4());
+    levels.push_back(CreateLevel5());
+    levels.push_back(CreateLevel6());
+    levels.push_back(CreateLevel7());
+    levels.push_back(CreateLevel8());
+    levels.push_back(CreateLevel9());
+    levels.push_back(CreateLevel10());
 
     int currentLevelIndex = 0;
 
@@ -191,7 +191,7 @@ int main()
                         if (highScores.size() > 10)
                             highScores.resize(10);
 
-                        saveScores("scores.txt", highScores);
+                        SaveScores("data/scores.txt", highScores);
 
                         state = GameState::Finished;
                     }
@@ -344,7 +344,7 @@ int main()
             for (const auto& obstacle : lvl.obstacles)
             {
                 sf::FloatRect obsBounds = obstacle.getGlobalBounds();
-                if (circleRectCollision(ballPos, ballRadius, obsBounds))
+                if (CircleRectCollision(ballPos, ballRadius, obsBounds))
                 {
                     ball.setPosition(lvl.spawn);
                     velocity = sf::Vector2f(0.f, 0.f);
@@ -358,7 +358,7 @@ int main()
             for (const auto& spike : lvl.spikes)
             {
                 sf::FloatRect sBounds = spike.shape.getGlobalBounds();
-                if (circleRectCollision(ballPos, ballRadius, sBounds))
+                if (CircleRectCollision(ballPos, ballRadius, sBounds))
                 {
                     ball.setPosition(lvl.spawn);
                     velocity = sf::Vector2f(0.f, 0.f);
@@ -397,17 +397,17 @@ int main()
                 title.setFillColor(sf::Color::Blue);
                 title.setStyle(sf::Text::Bold);
                 title.setPosition(0.f, 120.f);
-                centerTextX(title, 800.f);
+                CenterTextX(title, 800.f);
 
                 sf::Text press("Presiona ENTER para jugar", font, 28);
                 press.setFillColor(sf::Color::White);
                 press.setPosition(0.f, 260.f);
-                centerTextX(press, 800.f);
+                CenterTextX(press, 800.f);
 
                 sf::Text hint("Se registrara tu tiempo total para el ranking", font, 20);
                 hint.setFillColor(sf::Color::White);
                 hint.setPosition(0.f, 320.f);
-                centerTextX(hint, 800.f);
+                CenterTextX(hint, 800.f);
 
                 window.draw(title);
                 window.draw(press);
@@ -419,17 +419,17 @@ int main()
                 sf::Text prompt("Escribe tu nombre (sin espacios) y presiona ENTER", font, 24);
                 prompt.setFillColor(sf::Color::White);
                 prompt.setPosition(0.f, 200.f);
-                centerTextX(prompt, 800.f);
+                CenterTextX(prompt, 800.f);
 
                 sf::Text nameText(nameInputBuffer.empty() ? "_" : nameInputBuffer, font, 32);
                 nameText.setFillColor(sf::Color::Yellow);
                 nameText.setPosition(0.f, 260.f);
-                centerTextX(nameText, 800.f);
+                CenterTextX(nameText, 800.f);
 
                 sf::Text escText("ESC para volver al titulo", font, 18);
                 escText.setFillColor(sf::Color::White);
                 escText.setPosition(0.f, 320.f);
-                centerTextX(escText, 800.f);
+                CenterTextX(escText, 800.f);
 
                 window.draw(prompt);
                 window.draw(nameText);
@@ -479,13 +479,13 @@ int main()
                 msg.setOutlineColor(sf::Color::Black);
                 msg.setOutlineThickness(2.f);
                 msg.setPosition(0.f, 230.f);
-                centerTextX(msg, 800.f);
+                CenterTextX(msg, 800.f);
                 window.draw(msg);
 
                 sf::Text press("Presiona ENTER para continuar", font, 24);
                 press.setFillColor(sf::Color::White);
                 press.setPosition(0.f, 290.f);
-                centerTextX(press, 800.f);
+                CenterTextX(press, 800.f);
                 window.draw(press);
             }
 
@@ -495,19 +495,19 @@ int main()
                 msg.setOutlineColor(sf::Color::Black);
                 msg.setOutlineThickness(2.f);
                 msg.setPosition(0.f, 40.f);
-                centerTextX(msg, 800.f);
+                CenterTextX(msg, 800.f);
                 window.draw(msg);
 
                 sf::Text press("Presiona R para volver al titulo", font, 22);
                 press.setFillColor(sf::Color::White);
                 press.setPosition(0.f, 90.f);
-                centerTextX(press, 800.f);
+                CenterTextX(press, 800.f);
                 window.draw(press);
 
                 sf::Text rankTitle("Ranking (mejores tiempos totales)", font, 24);
                 rankTitle.setFillColor(sf::Color::White);
                 rankTitle.setPosition(0.f, 150.f);
-                centerTextX(rankTitle, 800.f);
+                CenterTextX(rankTitle, 800.f);
                 window.draw(rankTitle);
 
                 int maxLines = static_cast<int>(std::min<std::size_t>(highScores.size(), 8));

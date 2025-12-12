@@ -9,7 +9,7 @@ Platform::Platform(float x, float y, float w, float h) {
 }
 
 // Helper para crear picos
-Spike createSpike(float x, float y, float width, float height,
+Spike CreateSpike(float x, float y, float width, float height,
                   bool moving, float minX, float maxX, float speed) {
     Spike s;
     s.shape.setPointCount(3);

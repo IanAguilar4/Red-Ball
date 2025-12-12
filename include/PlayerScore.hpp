@@ -11,7 +11,7 @@ struct PlayerScore {
 };
 
 // Funciones para manejo de scores
-void loadScores(const std::string& filename, std::vector<PlayerScore>& scores);
-void saveScores(const std::string& filename, const std::vector<PlayerScore>& scores);
+void LoadScores(const std::string& filename, std::vector<PlayerScore>& scores);
+void SaveScores(const std::string& filename, const std::vector<PlayerScore>& scores);
 
 #endif
