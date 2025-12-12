@@ -5,6 +5,9 @@ BIN_DIR := bin
 SFML := -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio
 SFML_BOX2D := -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio -lbox2d
 
+# Archivos fuente del juego principal
+GAME_SOURCES := $(SRC_DIR)/RedBall.cpp $(SRC_DIR)/Platform.cpp $(SRC_DIR)/GameWorld.cpp $(SRC_DIR)/PlayerScore.cpp $(SRC_DIR)/Utils.cpp
+
 # Obtener todos los archivos .cpp en el directorio de origen
 CPP_FILES := $(wildcard $(SRC_DIR)/*.cpp)
 
@@ -18,9 +21,25 @@ $(BIN_DIR)/07_Fisica.exe: $(SRC_DIR)/07_Fisica.cpp
 $(BIN_DIR)/08_RedBallGame.exe: $(SRC_DIR)/08_RedBallGame.cpp
 	g++ $< -o $@ $(SFML_BOX2D) -Iinclude
 
-# Regla para compilar RedBall.cpp sin Box2D
-$(BIN_DIR)/RedBall.exe: $(SRC_DIR)/RedBall.cpp
-	g++ $< -o $@ $(SFML) -Iinclude
+# Regla para compilar RedBall.cpp con sus dependencias
+$(BIN_DIR)/RedBall.exe: $(GAME_SOURCES)
+	g++ $(GAME_SOURCES) -o $@ $(SFML) -Iinclude
+
+# Excluir los archivos auxiliares de compilación individual
+$(BIN_DIR)/Platform.exe:
+	@echo "Platform.cpp es un archivo auxiliar, no se compila individualmente"
+
+$(BIN_DIR)/GameWorld.exe:
+	@echo "GameWorld.cpp es un archivo auxiliar, no se compila individualmente"
+
+$(BIN_DIR)/PlayerScore.exe:
+	@echo "PlayerScore.cpp es un archivo auxiliar, no se compila individualmente"
+
+$(BIN_DIR)/Utils.exe:
+	@echo "Utils.cpp es un archivo auxiliar, no se compila individualmente"
+
+$(BIN_DIR)/RedBall_backup.exe:
+	@echo "RedBall_backup.cpp es un archivo de respaldo, no se compila"
 
 # Regla para compilar los demás archivos .cpp sin Box2D
 $(BIN_DIR)/%.exe: $(SRC_DIR)/%.cpp

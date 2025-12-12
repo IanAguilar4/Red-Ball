@@ -1,519 +1,11 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
-#include <vector>
 #include <cmath>
-#include <fstream>
-#include <algorithm>
-#include <string>
-
-// --- Estados del juego ---
-enum class GameState {
-    Title,
-    EnterName,
-    Playing,
-    LevelComplete,
-    Finished
-};
-
-// Estructura para representar una plataforma
-struct Platform {
-    sf::RectangleShape shape;
-    sf::FloatRect bounds;
-
-    Platform(float x, float y, float w, float h) {
-        shape.setSize(sf::Vector2f(w, h));
-        shape.setPosition(x, y);
-        shape.setFillColor(sf::Color(139, 69, 19)); // café
-        bounds = shape.getGlobalBounds();
-    }
-};
-
-// Estructura para representar un pico/obstáculo sobre plataformas
-struct Spike {
-    sf::ConvexShape shape;
-    bool moving;
-    float minX, maxX;
-    float speed;    // px/seg
-    int direction;  // 1 derecha, -1 izquierda
-};
-
-struct Level {
-    Platform ground;                         // suelo principal
-    std::vector<Platform> platforms;         // plataformas elevadas
-    std::vector<sf::RectangleShape> obstacles; // obstáculos "bloque" (negros)
-    std::vector<Spike> spikes;              // picos estáticos o móviles
-    sf::CircleShape goal;                    // objetivo (estrella)
-    sf::Vector2f spawn;                      // posición inicial del jugador
-
-    Level(float gx, float gy, float gw, float gh)
-        : ground(gx, gy, gw, gh) {}
-};
-
-// Estructura para los puntajes
-struct PlayerScore {
-    std::string name;
-    float time; // tiempo total en segundos
-};
-
-// ---- Funciones para manejo de scores ----
-void loadScores(const std::string& filename, std::vector<PlayerScore>& scores) {
-    std::ifstream in(filename);
-    if (!in) return;
-
-    PlayerScore ps;
-    while (in >> ps.name >> ps.time) {
-        scores.push_back(ps);
-    }
-
-    std::sort(scores.begin(), scores.end(),
-              [](const PlayerScore& a, const PlayerScore& b) {
-                  return a.time < b.time;
-              });
-}
-
-void saveScores(const std::string& filename, const std::vector<PlayerScore>& scores) {
-    std::ofstream out(filename);
-    if (!out) return;
-
-    for (const auto& ps : scores) {
-        out << ps.name << " " << ps.time << "\n";
-    }
-}
-
-// Centrar un texto horizontalmente en la ventana
-void centerTextX(sf::Text& text, float windowWidth) {
-    sf::FloatRect b = text.getLocalBounds();
-    text.setPosition((windowWidth - b.width) / 2.f - b.left, text.getPosition().y);
-}
-
-// Helper para crear picos
-Spike createSpike(float x, float y, float width, float height,
-                  bool moving = false, float minX = 0.f,
-                  float maxX = 0.f, float speed = 0.f) {
-    Spike s;
-    s.shape.setPointCount(3);
-    // Triángulo isósceles apuntando hacia arriba
-    s.shape.setPoint(0, sf::Vector2f(0.f, height));
-    s.shape.setPoint(1, sf::Vector2f(width / 2.f, 0.f));
-    s.shape.setPoint(2, sf::Vector2f(width, height));
-    s.shape.setPosition(x, y);
-    s.shape.setFillColor(sf::Color::Black);
-    s.moving = moving;
-    s.minX = minX;
-    s.maxX = maxX;
-    s.speed = speed;
-    s.direction = 1;
-    return s;
-}
-
-// --- Definición de niveles ---
-
-// Nivel 1: muy básico
-Level createLevel1() {
-    Level level(0.f, 560.f, 800.f, 40.f);
-    level.ground.shape.setFillColor(sf::Color(34, 139, 34));
-    level.ground.bounds = level.ground.shape.getGlobalBounds();
-
-    level.platforms.emplace_back(80.f, 450.f, 160.f, 20.f);
-    level.platforms.emplace_back(280.f, 370.f, 160.f, 20.f);
-    level.platforms.emplace_back(480.f, 300.f, 160.f, 20.f);
-
-    // Obstáculo en suelo
-    sf::RectangleShape obs1(sf::Vector2f(60.f, 60.f));
-    obs1.setPosition(450.f, 500.f);
-    obs1.setFillColor(sf::Color::Black);
-    level.obstacles.push_back(obs1);
-
-    // Pico estático sobre la segunda plataforma
-    level.spikes.push_back(createSpike(320.f, 370.f - 18.f, 40.f, 18.f));
-
-    level.goal = sf::CircleShape(20.f, 5);
-    level.goal.setOrigin(20.f, 20.f);
-    level.goal.setPosition(700.f, 260.f);
-    level.goal.setFillColor(sf::Color::Yellow);
-    level.goal.setOutlineColor(sf::Color(255, 215, 0));
-    level.goal.setOutlineThickness(3.f);
-
-    level.spawn = sf::Vector2f(80.f, 520.f);
-
-    return level;
-}
-
-// Nivel 2: más vertical y un pico móvil suave
-Level createLevel2() {
-    Level level(0.f, 560.f, 800.f, 40.f);
-    level.ground.shape.setFillColor(sf::Color(34, 139, 34));
-    level.ground.bounds = level.ground.shape.getGlobalBounds();
-
-    level.platforms.emplace_back(80.f, 480.f, 140.f, 20.f);
-    level.platforms.emplace_back(260.f, 420.f, 140.f, 20.f);
-    level.platforms.emplace_back(440.f, 360.f, 140.f, 20.f);
-    level.platforms.emplace_back(620.f, 300.f, 140.f, 20.f);
-
-    // Obstáculo en suelo
-    sf::RectangleShape obs1(sf::Vector2f(50.f, 80.f));
-    obs1.setPosition(220.f, 480.f);
-    obs1.setFillColor(sf::Color::Black);
-    level.obstacles.push_back(obs1);
-
-    // Pico estático sobre la primera plataforma
-    level.spikes.push_back(createSpike(110.f, 480.f - 18.f, 40.f, 18.f));
-
-    // Pico móvil sobre la tercera plataforma (se mueve de izquierda a derecha)
-    level.spikes.push_back(
-        createSpike(460.f, 360.f - 18.f, 40.f, 18.f,
-                    true, 450.f, 520.f, 70.f) // minX, maxX, speed
-    );
-
-    level.goal = sf::CircleShape(20.f, 5);
-    level.goal.setOrigin(20.f, 20.f);
-    level.goal.setPosition(720.f, 260.f);
-    level.goal.setFillColor(sf::Color::Yellow);
-    level.goal.setOutlineColor(sf::Color(255, 215, 0));
-    level.goal.setOutlineThickness(3.f);
-
-    level.spawn = sf::Vector2f(70.f, 520.f);
-
-    return level;
-}
-
-// Nivel 3: torre sencilla con picos
-Level createLevel3() {
-    Level level(0.f, 560.f, 800.f, 40.f);
-    level.ground.shape.setFillColor(sf::Color(34, 139, 34));
-    level.ground.bounds = level.ground.shape.getGlobalBounds();
-
-    level.platforms.emplace_back(100.f, 500.f, 120.f, 20.f);
-    level.platforms.emplace_back(260.f, 430.f, 120.f, 20.f);
-    level.platforms.emplace_back(420.f, 360.f, 120.f, 20.f);
-    level.platforms.emplace_back(580.f, 290.f, 120.f, 20.f);
-    level.platforms.emplace_back(580.f, 210.f, 120.f, 20.f);
-
-    // Bloque en suelo
-    sf::RectangleShape obs1(sf::Vector2f(60.f, 60.f));
-    obs1.setPosition(350.f, 500.f);
-    obs1.setFillColor(sf::Color::Black);
-    level.obstacles.push_back(obs1);
-
-    // Pico estático sobre la segunda plataforma
-    level.spikes.push_back(createSpike(290.f, 430.f - 18.f, 40.f, 18.f));
-
-    // Pico móvil sobre la cuarta plataforma
-    level.spikes.push_back(
-        createSpike(600.f, 290.f - 20.f, 40.f, 20.f,
-                    true, 580.f, 680.f, 80.f)
-    );
-
-    level.goal = sf::CircleShape(20.f, 5);
-    level.goal.setOrigin(20.f, 20.f);
-    level.goal.setPosition(640.f, 170.f);
-    level.goal.setFillColor(sf::Color::Yellow);
-    level.goal.setOutlineColor(sf::Color(255, 215, 0));
-    level.goal.setOutlineThickness(3.f);
-
-    level.spawn = sf::Vector2f(80.f, 520.f);
-
-    return level;
-}
-
-// Nivel 4: escalera larga
-Level createLevel4() {
-    Level level(0.f, 560.f, 800.f, 40.f);
-    level.ground.shape.setFillColor(sf::Color(34, 139, 34));
-    level.ground.bounds = level.ground.shape.getGlobalBounds();
-
-    level.platforms.emplace_back(60.f, 500.f, 120.f, 20.f);
-    level.platforms.emplace_back(220.f, 440.f, 120.f, 20.f);
-    level.platforms.emplace_back(380.f, 380.f, 120.f, 20.f);
-    level.platforms.emplace_back(540.f, 320.f, 120.f, 20.f);
-    level.platforms.emplace_back(660.f, 260.f, 100.f, 20.f);
-
-    // Bloques en suelo
-    sf::RectangleShape obs1(sf::Vector2f(50.f, 70.f));
-    obs1.setPosition(180.f, 490.f);
-    obs1.setFillColor(sf::Color::Black);
-    level.obstacles.push_back(obs1);
-
-    sf::RectangleShape obs2(sf::Vector2f(50.f, 70.f));
-    obs2.setPosition(420.f, 490.f);
-    obs2.setFillColor(sf::Color::Black);
-    level.obstacles.push_back(obs2);
-
-    // Picos sobre tercera y cuarta plataformas
-    level.spikes.push_back(createSpike(410.f, 380.f - 18.f, 40.f, 18.f));
-    level.spikes.push_back(
-        createSpike(560.f, 320.f - 18.f, 40.f, 18.f,
-                    true, 540.f, 650.f, 90.f)
-    );
-
-    level.goal = sf::CircleShape(20.f, 5);
-    level.goal.setOrigin(20.f, 20.f);
-    level.goal.setPosition(720.f, 220.f);
-    level.goal.setFillColor(sf::Color::Yellow);
-    level.goal.setOutlineColor(sf::Color(255, 215, 0));
-    level.goal.setOutlineThickness(3.f);
-
-    level.spawn = sf::Vector2f(80.f, 520.f);
-
-    return level;
-}
-
-// Nivel 5: puentes con huecos
-Level createLevel5() {
-    Level level(0.f, 560.f, 800.f, 40.f);
-    level.ground.shape.setFillColor(sf::Color(34, 139, 34));
-    level.ground.bounds = level.ground.shape.getGlobalBounds();
-
-    level.platforms.emplace_back(50.f, 450.f, 200.f, 20.f);
-    level.platforms.emplace_back(320.f, 450.f, 160.f, 20.f);
-    level.platforms.emplace_back(560.f, 450.f, 180.f, 20.f);
-
-    level.platforms.emplace_back(200.f, 350.f, 120.f, 20.f);
-    level.platforms.emplace_back(440.f, 320.f, 120.f, 20.f);
-
-    // Bloque en hueco central
-    sf::RectangleShape obs3(sf::Vector2f(60.f, 80.f));
-    obs3.setPosition(300.f, 480.f);
-    obs3.setFillColor(sf::Color::Black);
-    level.obstacles.push_back(obs3);
-
-    // Picos sobre plataformas superiores
-    level.spikes.push_back(createSpike(230.f, 350.f - 18.f, 40.f, 18.f));
-    level.spikes.push_back(
-        createSpike(460.f, 320.f - 18.f, 40.f, 18.f,
-                    true, 440.f, 520.f, 100.f)
-    );
-
-    level.goal = sf::CircleShape(20.f, 5);
-    level.goal.setOrigin(20.f, 20.f);
-    level.goal.setPosition(720.f, 410.f);
-    level.goal.setFillColor(sf::Color::Yellow);
-    level.goal.setOutlineColor(sf::Color(255, 215, 0));
-    level.goal.setOutlineThickness(3.f);
-
-    level.spawn = sf::Vector2f(80.f, 420.f);
-
-    return level;
-}
-
-// Nivel 6: plataformas pequeñas
-Level createLevel6() {
-    Level level(0.f, 560.f, 800.f, 40.f);
-    level.ground.shape.setFillColor(sf::Color(34, 139, 34));
-    level.ground.bounds = level.ground.shape.getGlobalBounds();
-
-    level.platforms.emplace_back(80.f, 500.f, 90.f, 20.f);
-    level.platforms.emplace_back(220.f, 430.f, 90.f, 20.f);
-    level.platforms.emplace_back(360.f, 360.f, 90.f, 20.f);
-    level.platforms.emplace_back(500.f, 290.f, 90.f, 20.f);
-    level.platforms.emplace_back(640.f, 230.f, 90.f, 20.f);
-
-    sf::RectangleShape obs1(sf::Vector2f(50.f, 60.f));
-    obs1.setPosition(180.f, 500.f);
-    obs1.setFillColor(sf::Color::Black);
-    level.obstacles.push_back(obs1);
-
-    sf::RectangleShape obs2(sf::Vector2f(50.f, 60.f));
-    obs2.setPosition(410.f, 500.f);
-    obs2.setFillColor(sf::Color::Black);
-    level.obstacles.push_back(obs2);
-
-    // Pico móvil sobre la cuarta plataforma
-    level.spikes.push_back(
-        createSpike(510.f, 290.f - 18.f, 40.f, 18.f,
-                    true, 500.f, 620.f, 110.f)
-    );
-
-    // Pico estático sobre la tercera
-    level.spikes.push_back(createSpike(380.f, 360.f - 18.f, 40.f, 18.f));
-
-    level.goal = sf::CircleShape(20.f, 5);
-    level.goal.setOrigin(20.f, 20.f);
-    level.goal.setPosition(700.f, 190.f);
-    level.goal.setFillColor(sf::Color::Yellow);
-    level.goal.setOutlineColor(sf::Color(255, 215, 0));
-    level.goal.setOutlineThickness(3.f);
-
-    level.spawn = sf::Vector2f(90.f, 520.f);
-
-    return level;
-}
-
-// Nivel 7: mezcla bajas/altas
-Level createLevel7() {
-    Level level(0.f, 560.f, 800.f, 40.f);
-    level.ground.shape.setFillColor(sf::Color(34, 139, 34));
-    level.ground.bounds = level.ground.shape.getGlobalBounds();
-
-    level.platforms.emplace_back(60.f, 500.f, 140.f, 20.f);
-    level.platforms.emplace_back(260.f, 500.f, 140.f, 20.f);
-    level.platforms.emplace_back(460.f, 500.f, 140.f, 20.f);
-
-    level.platforms.emplace_back(200.f, 380.f, 120.f, 20.f);
-    level.platforms.emplace_back(400.f, 340.f, 120.f, 20.f);
-    level.platforms.emplace_back(610.f, 300.f, 120.f, 20.f);
-
-    sf::RectangleShape obs1(sf::Vector2f(60.f, 80.f));
-    obs1.setPosition(340.f, 480.f);
-    obs1.setFillColor(sf::Color::Black);
-    level.obstacles.push_back(obs1);
-
-    // Picos sobre plataformas altas
-    level.spikes.push_back(createSpike(230.f, 380.f - 18.f, 40.f, 18.f));
-    level.spikes.push_back(
-        createSpike(430.f, 340.f - 18.f, 40.f, 18.f,
-                    true, 400.f, 500.f, 120.f)
-    );
-    level.spikes.push_back(createSpike(640.f, 300.f - 18.f, 40.f, 18.f));
-
-    level.goal = sf::CircleShape(20.f, 5);
-    level.goal.setOrigin(20.f, 20.f);
-    level.goal.setPosition(720.f, 260.f);
-    level.goal.setFillColor(sf::Color::Yellow);
-    level.goal.setOutlineColor(sf::Color(255, 215, 0));
-    level.goal.setOutlineThickness(3.f);
-
-    level.spawn = sf::Vector2f(80.f, 520.f);
-
-    return level;
-}
-
-// Nivel 8: camino largo con techos peligrosos (el de tu captura)
-Level createLevel8() {
-    Level level(0.f, 560.f, 800.f, 40.f);
-    level.ground.shape.setFillColor(sf::Color(34, 139, 34));
-    level.ground.bounds = level.ground.shape.getGlobalBounds();
-
-    level.platforms.emplace_back(150.f, 500.f, 160.f, 20.f);
-    level.platforms.emplace_back(320.f, 430.f, 160.f, 20.f);
-    level.platforms.emplace_back(490.f, 360.f, 160.f, 20.f);
-    level.platforms.emplace_back(660.f, 290.f, 120.f, 20.f);
-
-    // Bloque en extremo derecho (como en tu screenshot)
-    sf::RectangleShape obsFloor(sf::Vector2f(60.f, 80.f));
-    obsFloor.setPosition(700.f, 480.f);
-    obsFloor.setFillColor(sf::Color::Black);
-    level.obstacles.push_back(obsFloor);
-
-    // Picos sobre segunda y tercera plataformas
-    level.spikes.push_back(createSpike(360.f, 430.f - 18.f, 40.f, 18.f));
-    level.spikes.push_back(
-        createSpike(520.f, 360.f - 18.f, 40.f, 18.f,
-                    true, 510.f, 610.f, 130.f)
-    );
-
-    level.goal = sf::CircleShape(20.f, 5);
-    level.goal.setOrigin(20.f, 20.f);
-    level.goal.setPosition(740.f, 250.f);
-    level.goal.setFillColor(sf::Color::Yellow);
-    level.goal.setOutlineColor(sf::Color(255, 215, 0));
-    level.goal.setOutlineThickness(3.f);
-
-    level.spawn = sf::Vector2f(170.f, 520.f);
-
-    return level;
-}
-
-// Nivel 9: muchas rutas
-Level createLevel9() {
-    Level level(0.f, 560.f, 800.f, 40.f);
-    level.ground.shape.setFillColor(sf::Color(34, 139, 34));
-    level.ground.bounds = level.ground.shape.getGlobalBounds();
-
-    level.platforms.emplace_back(80.f, 500.f, 120.f, 20.f);
-    level.platforms.emplace_back(260.f, 500.f, 120.f, 20.f);
-    level.platforms.emplace_back(440.f, 500.f, 120.f, 20.f);
-
-    level.platforms.emplace_back(150.f, 420.f, 100.f, 20.f);
-    level.platforms.emplace_back(350.f, 380.f, 100.f, 20.f);
-    level.platforms.emplace_back(550.f, 340.f, 100.f, 20.f);
-
-    level.platforms.emplace_back(250.f, 300.f, 120.f, 20.f);
-    level.platforms.emplace_back(460.f, 260.f, 120.f, 20.f);
-
-    sf::RectangleShape obs1(sf::Vector2f(50.f, 70.f));
-    obs1.setPosition(210.f, 490.f);
-    obs1.setFillColor(sf::Color::Black);
-    level.obstacles.push_back(obs1);
-
-    sf::RectangleShape obs2(sf::Vector2f(50.f, 70.f));
-    obs2.setPosition(390.f, 490.f);
-    obs2.setFillColor(sf::Color::Black);
-    level.obstacles.push_back(obs2);
-
-    // Picos varios
-    level.spikes.push_back(createSpike(180.f, 420.f - 18.f, 40.f, 18.f));
-    level.spikes.push_back(
-        createSpike(370.f, 380.f - 18.f, 40.f, 18.f,
-                    true, 350.f, 430.f, 130.f)
-    );
-    level.spikes.push_back(createSpike(480.f, 260.f - 18.f, 40.f, 18.f));
-
-    level.goal = sf::CircleShape(20.f, 5);
-    level.goal.setOrigin(20.f, 20.f);
-    level.goal.setPosition(720.f, 220.f);
-    level.goal.setFillColor(sf::Color::Yellow);
-    level.goal.setOutlineColor(sf::Color(255, 215, 0));
-    level.goal.setOutlineThickness(3.f);
-
-    level.spawn = sf::Vector2f(90.f, 520.f);
-
-    return level;
-}
-
-// Nivel 10: final vertical
-Level createLevel10() {
-    Level level(0.f, 560.f, 800.f, 40.f);
-    level.ground.shape.setFillColor(sf::Color(34, 139, 34));
-    level.ground.bounds = level.ground.shape.getGlobalBounds();
-
-    level.platforms.emplace_back(80.f, 500.f, 90.f, 20.f);
-    level.platforms.emplace_back(200.f, 440.f, 90.f, 20.f);
-    level.platforms.emplace_back(320.f, 380.f, 90.f, 20.f);
-    level.platforms.emplace_back(440.f, 320.f, 90.f, 20.f);
-    level.platforms.emplace_back(560.f, 260.f, 90.f, 20.f);
-    level.platforms.emplace_back(680.f, 200.f, 90.f, 20.f);
-
-    sf::RectangleShape obs1(sf::Vector2f(50.f, 70.f));
-    obs1.setPosition(160.f, 490.f);
-    obs1.setFillColor(sf::Color::Black);
-    level.obstacles.push_back(obs1);
-
-    sf::RectangleShape obs2(sf::Vector2f(50.f, 70.f));
-    obs2.setPosition(360.f, 490.f);
-    obs2.setFillColor(sf::Color::Black);
-    level.obstacles.push_back(obs2);
-
-    sf::RectangleShape obs3(sf::Vector2f(50.f, 70.f));
-    obs3.setPosition(560.f, 490.f);
-    obs3.setFillColor(sf::Color::Black);
-    level.obstacles.push_back(obs3);
-
-    // Picos complicados al final
-    level.spikes.push_back(createSpike(220.f, 440.f - 18.f, 40.f, 18.f));
-    level.spikes.push_back(createSpike(340.f, 380.f - 18.f, 40.f, 18.f));
-    level.spikes.push_back(
-        createSpike(460.f, 320.f - 18.f, 40.f, 18.f,
-                    true, 440.f, 520.f, 150.f)
-    );
-    level.spikes.push_back(
-        createSpike(580.f, 260.f - 18.f, 40.f, 18.f,
-                    true, 560.f, 680.f, 170.f)
-    );
-
-    level.goal = sf::CircleShape(20.f, 5);
-    level.goal.setOrigin(20.f, 20.f);
-    level.goal.setPosition(720.f, 160.f);
-    level.goal.setFillColor(sf::Color::Yellow);
-    level.goal.setOutlineColor(sf::Color(255, 215, 0));
-    level.goal.setOutlineThickness(3.f);
-
-    level.spawn = sf::Vector2f(90.f, 520.f);
-
-    return level;
-}
-
-// --- Juego Red Ball con niveles y ranking ---
+#include "GameState.hpp"
+#include "Platform.hpp"
+#include "GameWorld.hpp"
+#include "PlayerScore.hpp"
+#include "Utils.hpp"
 
 int main()
 {
@@ -525,21 +17,20 @@ int main()
         std::cout << "Error: No se pudo cargar la fuente (assets/fonts/arialbd.ttf)" << std::endl;
     }
 
-    // NUEVO: textura para la bola
+    // Textura para la bola
     sf::Texture ballTexture;
     if (!ballTexture.loadFromFile("assets/sprites/blueface.png")) {
         std::cout << "Error: No se pudo cargar la textura de la bola (assets/sprites/blueface.png)" << std::endl;
     } else {
-        ballTexture.setSmooth(true); // se ve menos pixelado
+        ballTexture.setSmooth(true);
     }
 
     // Scores
     std::vector<PlayerScore> highScores;
     loadScores("scores.txt", highScores);
 
-
-    std::string playerName;        // nombre actual
-    std::string nameInputBuffer;   // lo que el usuario va escribiendo
+    std::string playerName;
+    std::string nameInputBuffer;
 
     // Definir niveles
     std::vector<Level> levels;
@@ -559,15 +50,11 @@ int main()
     // Jugador
     sf::CircleShape ball(25.f);
     ball.setOrigin(25.f, 25.f);
-
-    // Color base blanco para que no tinte la textura
     ball.setFillColor(sf::Color::White);
-    ball.setOutlineColor(sf::Color::Transparent); // opcional, sin borde
-
-    // Asignar textura de la cara
+    ball.setOutlineColor(sf::Color::Transparent);
     ball.setTexture(&ballTexture);
 
-    // Física (igual que tenías)
+    // Física
     sf::Vector2f velocity(0.f, 0.f);
     const float gravity = 0.5f;
     const float acceleration = 1.2f;
@@ -580,8 +67,8 @@ int main()
     GameState state = GameState::Title;
 
     sf::Clock clock;
-    float timeElapsed = 0.0f;    // tiempo del nivel actual
-    float totalRunTime = 0.0f;   // tiempo total de la partida (todos los niveles)
+    float timeElapsed = 0.0f;
+    float totalRunTime = 0.0f;
 
     auto resetLevel = [&](int index) {
         currentLevelIndex = index;
@@ -593,7 +80,6 @@ int main()
         clock.restart();
     };
 
-    // Comenzamos en Título
     resetLevel(0);
 
     while (window.isOpen())
@@ -615,7 +101,7 @@ int main()
             else if (state == GameState::EnterName) {
                 if (event.type == sf::Event::TextEntered) {
                     char c = static_cast<char>(event.text.unicode);
-                    if (event.text.unicode == 8) { // Backspace
+                    if (event.text.unicode == 8) {
                         if (!nameInputBuffer.empty())
                             nameInputBuffer.pop_back();
                     } else if (event.text.unicode >= 33 && event.text.unicode <= 126) {
@@ -673,7 +159,7 @@ int main()
         float dt = clock.restart().asSeconds();
         if (dt > 0.05f) dt = 0.05f;
 
-        // --------- LÓGICA DEL JUEGO ---------
+        // LÓGICA DEL JUEGO
         if (state == GameState::Playing) {
             timeElapsed += dt;
             totalRunTime += dt;
@@ -797,7 +283,7 @@ int main()
                 velocity.x = 0;
             }
 
-            // Colisión con obstáculos (bloques)
+            // Colisión con obstáculos (bloques mortales)
             ballBounds = ball.getGlobalBounds();
             for (const auto& obstacle : lvl.obstacles)
             {
@@ -811,7 +297,7 @@ int main()
                 }
             }
 
-            // Colisión con picos
+            // Colisión con picos (mortales)
             ballBounds = ball.getGlobalBounds();
             for (const auto& spike : lvl.spikes)
             {
@@ -846,8 +332,8 @@ int main()
             }
         }
 
-        // --------- DIBUJO ---------
-        window.clear(sf::Color(135, 206, 235)); // cielo
+        // DIBUJO
+        window.clear(sf::Color(135, 206, 235));
 
         if (state == GameState::Title) {
             if (font.getInfo().family != "") {

@@ -2,22 +2,27 @@
 #define PLATFORM_HPP
 
 #include <SFML/Graphics.hpp>
-#include <Box2D/Box2D.h>
 
-class Platform {
-public:
-    Platform(b2World* world, float x, float y, float width, float height);
-    ~Platform();
-    
-    sf::RectangleShape getShape() const;
-    sf::Vector2f getPosition() const;
-    sf::Vector2f getSize() const;
-    
-private:
-    b2Body* body;
-    b2Shape* shape;
-    float width;
-    float height;
+// Estructura para representar una plataforma
+struct Platform {
+    sf::RectangleShape shape;
+    sf::FloatRect bounds;
+
+    Platform(float x, float y, float w, float h);
 };
+
+// Estructura para representar un pico/obstáculo sobre plataformas
+struct Spike {
+    sf::ConvexShape shape;
+    bool moving;
+    float minX, maxX;
+    float speed;    // px/seg
+    int direction;  // 1 derecha, -1 izquierda
+};
+
+// Helper para crear picos
+Spike createSpike(float x, float y, float width, float height,
+                  bool moving = false, float minX = 0.f,
+                  float maxX = 0.f, float speed = 0.f);
 
 #endif
