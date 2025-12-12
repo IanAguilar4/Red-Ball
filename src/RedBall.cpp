@@ -1,6 +1,8 @@
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 #include <iostream>
 #include <cmath>
+#include <random>
 #include "GameState.hpp"
 #include "Platform.hpp"
 #include "GameWorld.hpp"
@@ -30,6 +32,38 @@ int main()
     if (!font.loadFromFile("assets/fonts/arialbd.ttf")) {
         std::cout << "Error: No se pudo cargar la fuente (assets/fonts/arialbd.ttf)" << std::endl;
     }
+
+    // Cargar música
+    sf::Music menuMusic;
+    if (!menuMusic.openFromFile("assets/music/01_look_up_mastered.ogg")) {
+        std::cout << "Error: No se pudo cargar la música del menú" << std::endl;
+    }
+    menuMusic.setLoop(true);
+
+    // Pistas para los niveles (aleatorias)
+    std::vector<std::string> levelMusicPaths = {
+        "assets/music/02_bailando_sin_frenos.ogg",
+        "assets/music/03_fuego_en_la_pista.ogg",
+        "assets/music/04_la_luna_y_el_barrio.ogg",
+        "assets/music/05_luz_y_sudor.ogg",
+        "assets/music/06_sudor_y_candela.ogg"
+    };
+    
+    sf::Music levelMusic;
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(0, levelMusicPaths.size() - 1);
+    
+    auto loadRandomLevelMusic = [&]() {
+        int randomIndex = dis(gen);
+        levelMusic.stop();
+        if (levelMusic.openFromFile(levelMusicPaths[randomIndex])) {
+            levelMusic.setLoop(true);
+            std::cout << "Música de nivel cargada: " << levelMusicPaths[randomIndex] << std::endl;
+        } else {
+            std::cout << "Error al cargar música de nivel" << std::endl;
+        }
+    };
 
     // Scores
     std::vector<PlayerScore> highScores;
@@ -88,6 +122,9 @@ int main()
     };
 
     resetLevel(0);
+    
+    // Iniciar música del menú
+    menuMusic.play();
 
     while (window.isOpen())
     {
@@ -122,9 +159,14 @@ int main()
                             playerName = nameInputBuffer;
                             totalRunTime = 0.0f;
                             resetLevel(0);
+                            // Cambiar a música de nivel
+                            menuMusic.stop();
+                            loadRandomLevelMusic();
+                            levelMusic.play();
                             state = GameState::Playing;
                         }
                     } else if (event.key.code == sf::Keyboard::Escape) {
+                        menuMusic.play();
                         state = GameState::Title;
                     }
                 }
@@ -158,6 +200,9 @@ int main()
             else if (state == GameState::Finished) {
                 if (event.type == sf::Event::KeyPressed &&
                     event.key.code == sf::Keyboard::R) {
+                    // Volver a música del menú y resetear
+                    levelMusic.stop();
+                    menuMusic.play();
                     state = GameState::Title;
                 }
             }
