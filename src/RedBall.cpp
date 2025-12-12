@@ -517,7 +517,7 @@ Level createLevel10() {
 
 int main()
 {
-    sf::RenderWindow window(sf::VideoMode(800, 600), "Red Ball - Niveles");
+    sf::RenderWindow window(sf::VideoMode(800, 600), "Blue Balls - Niveles");
 
     // Cargar fuente
     sf::Font font;
@@ -525,9 +525,18 @@ int main()
         std::cout << "Error: No se pudo cargar la fuente (assets/fonts/arialbd.ttf)" << std::endl;
     }
 
+    // NUEVO: textura para la bola
+    sf::Texture ballTexture;
+    if (!ballTexture.loadFromFile("assets/sprites/blueface.png")) {
+        std::cout << "Error: No se pudo cargar la textura de la bola (assets/sprites/blueface.png)" << std::endl;
+    } else {
+        ballTexture.setSmooth(true); // se ve menos pixelado
+    }
+
     // Scores
     std::vector<PlayerScore> highScores;
     loadScores("scores.txt", highScores);
+
 
     std::string playerName;        // nombre actual
     std::string nameInputBuffer;   // lo que el usuario va escribiendo
@@ -550,9 +559,13 @@ int main()
     // Jugador
     sf::CircleShape ball(25.f);
     ball.setOrigin(25.f, 25.f);
-    ball.setFillColor(sf::Color::Red);
-    ball.setOutlineColor(sf::Color(139, 0, 0));
-    ball.setOutlineThickness(2.f);
+
+    // Color base blanco para que no tinte la textura
+    ball.setFillColor(sf::Color::White);
+    ball.setOutlineColor(sf::Color::Transparent); // opcional, sin borde
+
+    // Asignar textura de la cara
+    ball.setTexture(&ballTexture);
 
     // Física (igual que tenías)
     sf::Vector2f velocity(0.f, 0.f);
@@ -838,8 +851,8 @@ int main()
 
         if (state == GameState::Title) {
             if (font.getInfo().family != "") {
-                sf::Text title("RED BALL", font, 72);
-                title.setFillColor(sf::Color::Red);
+                sf::Text title("BLUE BALLS", font, 72);
+                title.setFillColor(sf::Color::Blue);
                 title.setStyle(sf::Text::Bold);
                 title.setPosition(0.f, 120.f);
                 centerTextX(title, 800.f);
